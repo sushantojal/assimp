@@ -2126,25 +2126,29 @@ aiColor3D Converter::GetColorPropertyFromMaterial( const PropertyTable& props, c
     bool& result )
 {
     result = true;
-
     bool ok;
-    const aiVector3D& Diffuse = PropertyGet<aiVector3D>( props, baseName, ok );
-    if ( ok ) {
-        return aiColor3D( Diffuse.x, Diffuse.y, Diffuse.z );
-    }
-    else {
-        aiVector3D DiffuseColor = PropertyGet<aiVector3D>( props, baseName + "Color", ok );
-        if ( ok ) {
-            float DiffuseFactor = PropertyGet<float>( props, baseName + "Factor", ok );
-            if ( ok ) {
-                DiffuseColor *= DiffuseFactor;
-            }
 
-            return aiColor3D( DiffuseColor.x, DiffuseColor.y, DiffuseColor.z );
+    // maya and other viewers are taking material colors with name "diffuseColor", so change the values to import
+    aiVector3D DiffuseColor = PropertyGet<aiVector3D>(props,baseName + "Color", ok);
+    if (ok)
+    {
+        float DiffuseFactor = PropertyGet<float>(props,baseName + "Factor",ok);
+        if (ok)
+        {
+            DiffuseColor *= DiffuseFactor;
         }
+        return aiColor3D(DiffuseColor.x,DiffuseColor.y,DiffuseColor.z);
     }
-    result = false;
-    return aiColor3D( 0.0f, 0.0f, 0.0f );
+    else
+    {
+        const aiVector3D& Diffuse = PropertyGet<aiVector3D>(props,baseName,ok);
+        if (ok)
+        {
+             return aiColor3D(Diffuse.x,Diffuse.y,Diffuse.z);
+        }
+        result = false;
+        return aiColor3D(0.0f,0.0f,0.0f);
+    }
 }
 
 
