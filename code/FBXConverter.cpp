@@ -1997,10 +1997,16 @@ void Converter::TrySetTextureProperties( aiMaterial* out_mat, const LayeredTextu
         out_mat->AddProperty( &uvTrafo, 1, _AI_MATKEY_UVTRANSFORM_BASE, target, texIndex );
 
         const PropertyTable& props = tex->Props();
+        const int wrapU=tex->WrapmodeU();
+        out_mat->AddProperty(&wrapU,1,_AI_MATKEY_MAPPINGMODE_U_BASE,target,0);
+        const int wrapV=tex->WrapmodeV();
+        out_mat->AddProperty(&wrapV,1,_AI_MATKEY_MAPPINGMODE_V_BASE,target,0);
 
         int uvIndex = 0;
 
         bool ok;
+	int blend_mode = PropertyGet<int>(props,"CurrentTextureBlendMode",ok);
+	out_mat->AddProperty(&blend_mode,1,_AI_MATKEY_TEXOP_BASE,target,texIndex);
         const std::string& uvSet = PropertyGet<std::string>( props, "UVSet", ok );
         if ( ok ) {
             // "default" is the name which usually appears in the FbxFileTexture template
