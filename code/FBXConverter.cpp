@@ -112,7 +112,7 @@ private:
 
     // ------------------------------------------------------------------------------------------------
     // collect and assign child nodes
-    void ConvertNodes( uint64_t id, aiNode& parent, const aiMatrix4x4& parent_transform = aiMatrix4x4() );
+    void ConvertNodes(uint64_t id, aiNode& parent, const aiMatrix4x4& parent_transform = aiMatrix4x4(),const aiMatrix4x4& parent_geom_transform = aiMatrix4x4());
 
     // ------------------------------------------------------------------------------------------------
     void ConvertLights( const Model& model );
@@ -154,7 +154,7 @@ private:
     /**
      *  note: memory for output_nodes will be managed by the caller
      */
-    void GenerateTransformationNodeChain( const Model& model, std::vector<aiNode*>& output_nodes );
+    void GenerateTransformationNodeChain(const Model& model, std::vector<aiNode*>& output_nodes,std::vector<aiMatrix4x4>& geom_trans_chain);
 
     // ------------------------------------------------------------------------------------------------
     void SetupNodeMetadata( const Model& model, aiNode& nd );
@@ -499,7 +499,7 @@ void Converter::ConvertRootNode()
 }
 
 
-void Converter::ConvertNodes( uint64_t id, aiNode& parent, const aiMatrix4x4& parent_transform )
+void Converter::ConvertNodes(uint64_t id, aiNode& parent, const aiMatrix4x4& parent_transform, const aiMatrix4x4& parent_geom_transform)
 {
     const std::vector<const Connection*>& conns = doc.GetConnectionsByDestinationSequenced( id, "Model" );
 
@@ -523,17 +523,21 @@ void Converter::ConvertNodes( uint64_t id, aiNode& parent, const aiMatrix4x4& pa
             }
 
             const Model* const model = dynamic_cast<const Model*>( object );
+	    std::vector<aiMatrix4x4>geom_trans_chain;
 
             if ( model ) {
                 nodes_chain.clear();
 
                 aiMatrix4x4 new_abs_transform = parent_transform;
+                // get the parent's geomtric transform
+                aiMatrix4x4 new_geom_transform = parent_geom_transform;
 
                 // even though there is only a single input node, the design of
                 // assimp (or rather: the complicated transformation chain that
                 // is employed by fbx) means that we may need multiple aiNode's
                 // to represent a fbx node's transformation.
-                GenerateTransformationNodeChain( *model, nodes_chain );
+                // create chain for geometric transformations for a node
+               GenerateTransformationNodeChain(*model,nodes_chain, geom_trans_chain);
 
                 ai_assert( nodes_chain.size() );
 
@@ -558,9 +562,11 @@ void Converter::ConvertNodes( uint64_t id, aiNode& parent, const aiMatrix4x4& pa
 
                 //setup metadata on newest node
                 SetupNodeMetadata( *model, *nodes_chain.back() );
+		aiMatrix4x4 geomTransform;
 
                 // link all nodes in a row
                 aiNode* last_parent = &parent;
+
                 for( aiNode* prenode : nodes_chain ) {
                     ai_assert( prenode );
 
@@ -575,12 +581,41 @@ void Converter::ConvertNodes( uint64_t id, aiNode& parent, const aiMatrix4x4& pa
 
                     new_abs_transform *= prenode->mTransformation;
                 }
+                    
+                // create resultant transformation matrix for geometric transforms
+                for (aiMatrix4x4 geomTransform_iterator : geom_trans_chain) {
+                    geomTransform *= geomTransform_iterator;
+                }
+                    
+               /*
+                Parent's transform:
+                P: "GeometricTranslation", "Vector3D", "Vector", "",12.1153955459595,11.4956798553467,-14.7285804748535
+                P: "GeometricRotation", "Vector3D", "Vector", "",0,-0,90
+                P: "DefaultAttributeIndex", "int", "Integer", "",0
+                P: "Lcl Rotation", "Lcl Rotation", "", "A+",0,-0,-1.00179121002435e-005
+                P: "Lcl Scaling", "Lcl Scaling", "", "A+",0.153642907738686,0.153642907738686,0.153642907738686
+
+                child's transform:
+                P: "GeometricTranslation", "Vector3D", "Vector", "",2.46326160430908,7.03456497192383,3.42083644866943
+                P: "GeometricRotation", "Vector3D", "Vector", "",83.8349304199219,-36.5436477661133,106.183135986328
+                P: "DefaultAttributeIndex", "int", "Integer", "",0
+                P: "Lcl Translation", "Lcl Translation", "", "A+",-1.7763576864332e-015,-4.23516524114248e-022,0
+                P: "Lcl Rotation", "Lcl Rotation", "", "A+",0,-0,1.36603783400252e-005
+                P: "Lcl Scaling", "Lcl Scaling", "", "A+",0.837871849536896,0.837871849536896,1.197625041008
+
+                child's final transform matrix:
+                [0.0029142718, 0.11116818, 0.10624344, 0.0, 0.027614351, -0.11699012, 0.13531283, 0.0, 0.13911901, 0.005379092, -0.020409385, 0.0, 0.31710327, 0.9055815, 0.62945676, 1.0]
+                    
+                */
+                // We dont want geomtric transforms to be inherited down the hierarchy so we add the inverse of parent's geometric transform into current node's transform 
+                // So when we calculate global matrix of the node we dont get parent's geometric transform in final transform
+                nodes_chain.front()->mTransformation= new_geom_transform.Inverse() * nodes_chain.front()->mTransformation;
 
                 // attach geometry
                 ConvertModel( *model, *nodes_chain.back(), new_abs_transform );
 
                 // attach sub-nodes
-                ConvertNodes( model->ID(), *nodes_chain.back(), new_abs_transform );
+                ConvertNodes(model->ID(), *nodes_chain.back(), new_abs_transform, geomTransform );
 
                 if ( doc.Settings().readLights ) {
                     ConvertLights( *model );
@@ -935,9 +970,8 @@ std::string Converter::NameTransformationChainNode( const std::string& name, Tra
 {
     return name + std::string( MAGIC_NODE_TAG ) + "_" + NameTransformationComp( comp );
 }
-
-void Converter::GenerateTransformationNodeChain( const Model& model,
-    std::vector<aiNode*>& output_nodes )
+void Converter::GenerateTransformationNodeChain(const Model& model, 
+    std::vector<aiNode*>& output_nodes,std::vector<aiMatrix4x4>& geom_trans_chain)
 {
     const PropertyTable& props = model.Props();
     const Model::RotOrder rot = model.RotationOrder();
@@ -1058,7 +1092,21 @@ void Converter::GenerateTransformationNodeChain( const Model& model,
             nd->mName.Set( NameTransformationChainNode( name, comp ) );
             nd->mTransformation = chain[ i ];
         }
+         // Add geometric transforms into the chain
+        bit=0x1;
+        bit<<=11;
+        for (size_t i = TransformationComp_GeometricTranslation; i < TransformationComp_MAXIMUM; ++i, bit <<= 1)
+	{
+            const TransformationComp comp = static_cast<TransformationComp>(i);
 
+            if (chain[i].IsIdentity() && (anim_chain_bitmask & bit) == 0) {
+                continue;
+            }
+            aiNode* nd = new aiNode();
+            output_nodes.push_back(nd);
+            nd->mName.Set(NameTransformationChainNode(name, comp));
+            geom_trans_chain.push_back(chain[i]);
+	}
         ai_assert( output_nodes.size() );
         return;
     }
@@ -1072,6 +1120,13 @@ void Converter::GenerateTransformationNodeChain( const Model& model,
     for (const auto &transform : chain) {
         nd->mTransformation = nd->mTransformation * transform;
     }
+    // Create resultant geometric transform for the node
+    aiMatrix4x4 geomTransform;
+    for (size_t i = TransformationComp_GeometricTranslation; i < TransformationComp_MAXIMUM; ++i) {
+        geomTransform = geomTransform * chain[i];
+    }
+    geom_trans_chain.push_back(geomTransform);
+
 }
 
 void Converter::SetupNodeMetadata( const Model& model, aiNode& nd )
@@ -1809,6 +1864,12 @@ void Converter::TrySetTextureProperties( aiMaterial* out_mat, const TextureMap& 
         out_mat->AddProperty( &uvTrafo, 1, _AI_MATKEY_UVTRANSFORM_BASE, target, 0 );
 
         const PropertyTable& props = tex->Props();
+            
+	// Set the wrapping modes of a texture into material property
+        const int wrapU=tex->WrapmodeU();
+        out_mat->AddProperty(&wrapU,1,_AI_MATKEY_MAPPINGMODE_U_BASE,target,0);
+        const int wrapV=tex->WrapmodeV();
+        out_mat->AddProperty(&wrapV,1,_AI_MATKEY_MAPPINGMODE_V_BASE,target,0);
 
         int uvIndex = 0;
 

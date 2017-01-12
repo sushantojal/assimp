@@ -158,6 +158,11 @@ Texture::Texture(uint64_t id, const Element& element, const Document& doc, const
     const Element* const ModelUVScaling = sc["ModelUVScaling"];
     const Element* const Texture_Alpha_Source = sc["Texture_Alpha_Source"];
     const Element* const Cropping = sc["Cropping"];
+    
+    // Create an element to retrieve wrap modes from a texture
+    const Element* const WrapModeU = sc["WrapModeU"];
+    const Element* const WrapModeV = sc["WrapModeV"];
+    const Element* const WrapModeW = sc["WrapModeW"];
 
     if(Type) {
         type = ParseTokenAsString(GetRequiredToken(*Type,0));
@@ -182,7 +187,36 @@ Texture::Texture(uint64_t id, const Element& element, const Document& doc, const
             ParseTokenAsFloat(GetRequiredToken(*ModelUVScaling,1))
         );
     }
+    props = GetPropertyTable(doc,"Texture.FbxFileTexture",element,sc);
+    ai_assert(props);
 
+    // if wrap mode is given for each texture, set it otherwise take it from default values
+    if(WrapModeU) {
+        wrapmodes[0]=ParseTokenAsInt(GetRequiredToken(*WrapModeU,0));
+    }
+    else {
+        Property* property=const_cast<Property*>(props->Get("WrapModeU"));
+        ai_assert(property);
+        wrapmodes[0]=(dynamic_cast<TypedProperty<int> *>(property))->Value();
+    }
+    if(WrapModeV) {
+        wrapmodes[1]=ParseTokenAsInt(GetRequiredToken(*WrapModeV,0));
+    }
+    else {
+        Property* property=const_cast<Property*>(props->Get("WrapModeV"));
+        ai_assert(property);
+        wrapmodes[1]=(dynamic_cast<TypedProperty<int> *>(property))->Value();
+    }
+    if(WrapModeW) {
+        wrapmodes[2]=ParseTokenAsInt(GetRequiredToken(*WrapModeW,0));
+    }
+    else {
+        Property* property=const_cast<Property*>(props->Get("WrapModeW"));
+        if(property)
+            wrapmodes[2]=(dynamic_cast<TypedProperty<int> *>(property))->Value();
+        else
+            wrapmodes[2]=0;
+    }
     if(Cropping) {
         crop[0] = ParseTokenAsInt(GetRequiredToken(*Cropping,0));
         crop[1] = ParseTokenAsInt(GetRequiredToken(*Cropping,1));
@@ -198,8 +232,6 @@ Texture::Texture(uint64_t id, const Element& element, const Document& doc, const
     if(Texture_Alpha_Source) {
         alphaSource = ParseTokenAsString(GetRequiredToken(*Texture_Alpha_Source,0));
     }
-
-    props = GetPropertyTable(doc,"Texture.FbxFileTexture",element,sc);
 
     // resolve video links
     if(doc.Settings().readTextures) {

@@ -531,6 +531,17 @@ public:
     const unsigned int* Crop() const {
         return crop;
     }
+    
+    // Get the wrapping modes in a texture
+    const int WrapmodeU()  const {
+        return wrapmodes[0];
+    }
+    const int WrapmodeV()  const {
+        return wrapmodes[1];
+    }
+    const int WrapmodeW()  const {
+        return wrapmodes[2];
+    }
 
     const Video* Media() const {
         return media;
@@ -539,7 +550,7 @@ public:
 private:
     aiVector2D uvTrans;
     aiVector2D uvScaling;
-
+    int wrapmodes[3];
     std::string type;
     std::string relativeFileName;
     std::string fileName;
