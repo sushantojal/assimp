@@ -175,7 +175,7 @@ void ObjFileMtlImporter::load()
                     getFloatValue( m_pModel->m_pCurrentMaterial->alpha );
                     m_DataIt = skipLine<DataArrayIt>( m_DataIt, m_DataItEnd, m_uiLine );
                 }
-            }width * height * 4
+            }
             break;
 
         case 'N':
