@@ -3,7 +3,8 @@
 Open Asset Import Library (assimp)
 ---------------------------------------------------------------------------
 
-Copyright (c) 2006-2016, assimp team
+Copyright (c) 2006-2017, assimp team
+
 
 All rights reserved.
 
@@ -56,6 +57,6 @@ public:
     }
 };
 
-TEST_F( utIFCImportExport, importHMPFromFileTest ) {
+TEST_F( utIFCImportExport, importIFCFromFileTest ) {
     EXPECT_TRUE( importerTest() );
 }

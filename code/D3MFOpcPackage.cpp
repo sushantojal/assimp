@@ -2,7 +2,8 @@
 Open Asset Import Library (assimp)
 ----------------------------------------------------------------------
 
-Copyright (c) 2006-2016, assimp team
+Copyright (c) 2006-2017, assimp team
+
 All rights reserved.
 
 Redistribution and use of this software in source and binary forms,
@@ -48,12 +49,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <assimp/DefaultLogger.hpp>
 #include <assimp/ai_assert.h>
 
+#include <cstdlib>
 #include <memory>
 #include <vector>
 #include <map>
 #include <algorithm>
 #include <cassert>
-#include <cstdlib>
 
 #include <contrib/unzip/unzip.h>
 
@@ -228,7 +229,7 @@ ZipFile::~ZipFile() {
 
 size_t ZipFile::Read(void* pvBuffer, size_t pSize, size_t pCount) {
     const size_t size = pSize * pCount;
-    assert(size <= m_Size);
+    ai_assert(size <= m_Size);
 
     std::memcpy(pvBuffer, m_Buffer, size);
 
@@ -378,6 +379,7 @@ IOStream *D3MFZipArchive::Open(const char* pFile, const char* /*pMode*/) {
 // ------------------------------------------------------------------------------------------------
 //  Close a filestream.
 void D3MFZipArchive::Close(IOStream *pFile) {
+    (void)(pFile);
     ai_assert(pFile != NULL);
 
     // We don't do anything in case the file would be opened again in the future
