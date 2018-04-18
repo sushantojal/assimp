@@ -52,6 +52,11 @@ private:
 	/// \param [in] pFileName - path and name of the file.
 	void ImportFile(const QString& pFileName);
 
+
+	/// \fn void ResetSceneInfos()
+	/// Reset informations about the scene
+	void ResetSceneInfos();
+
 	/********************************************************************/
 	/************************ Logging functions *************************/
 	/********************************************************************/
@@ -65,27 +70,27 @@ private:
 	void LogError(const QString& pMessage);
 
 	/********************************************************************/
-	/*********************** Overrided functions ************************/
+	/*********************** Override functions ************************/
 	/********************************************************************/
 
 protected:
 
 	/// \fn void mousePressEvent(QMouseEvent* pEvent) override
-	/// Overrided function which handle mouse event "button pressed".
+	/// Override function which handles mouse event "button pressed".
 	/// \param [in] pEvent - pointer to event data.
 	void mousePressEvent(QMouseEvent* pEvent) override;
 
 	/// \fn void mouseMoveEvent(QMouseEvent* pEvent) override
-	/// Overrided function which handle mouse event "move".
+	/// Override function which handles mouse event "move".
 	/// \param [in] pEvent - pointer to event data.
 	void mouseMoveEvent(QMouseEvent* pEvent) override;
 
 	/// \fn void keyPressEvent(QKeyEvent* pEvent) override
-	/// Overrided function which handle key event "key pressed".
+	/// Override function which handles key event "key pressed".
 	/// \param [in] pEvent - pointer to event data.
 	void keyPressEvent(QKeyEvent* pEvent) override;
 
-
+	bool event(QEvent*);
 public:
 
 	/********************************************************************/
@@ -128,4 +133,6 @@ private slots:
 	void on_lstCamera_clicked(const QModelIndex &index);
 	void on_cbxBBox_clicked(bool checked);
 	void on_cbxTextures_clicked(bool checked);
+	void on_cbxDrawAxes_clicked(bool checked);
+	void on_cbxReloadTextures_clicked(bool checked);
 };

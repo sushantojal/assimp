@@ -3,7 +3,8 @@
 Open Asset Import Library (assimp)
 ---------------------------------------------------------------------------
 
-Copyright (c) 2006-2017, assimp team
+Copyright (c) 2006-2018, assimp team
+
 
 
 All rights reserved.
@@ -47,8 +48,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // internal headers
 #include "STLLoader.h"
-#include "ParsingUtils.h"
-#include "fast_atof.h"
+#include <assimp/ParsingUtils.h>
+#include <assimp/fast_atof.h>
 #include <memory>
 #include <assimp/IOSystem.hpp>
 #include <assimp/scene.h>
@@ -58,6 +59,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using namespace Assimp;
 
 namespace {
+    
 static const aiImporterDesc desc = {
     "Stereolithography (STL) Importer",
     "",
@@ -207,12 +209,6 @@ void STLImporter::InternReadFile( const std::string& pFile, aiScene* pScene, IOS
         throw DeadlyImportError( "Failed to determine STL storage representation for " + pFile + ".");
     }
 
-    // add all created meshes to the single node
-    /*pScene->mRootNode->mNumMeshes = pScene->mNumMeshes;
-    pScene->mRootNode->mMeshes = new unsigned int[pScene->mNumMeshes];
-    for (unsigned int i = 0; i < pScene->mNumMeshes; i++)
-        pScene->mRootNode->mMeshes[i] = i;
-    */
     // create a single default material, using a white diffuse color for consistency with
     // other geometric types (e.g., PLY).
     aiMaterial* pcMat = new aiMaterial();
@@ -254,7 +250,7 @@ void STLImporter::LoadASCIIFile( aiNode *root ) {
         std::vector<unsigned int> meshIndices;
         aiMesh* pMesh = new aiMesh();
         pMesh->mMaterialIndex = 0;
-        meshIndices.push_back( meshes.size() );
+        meshIndices.push_back((unsigned int) meshes.size() );
         meshes.push_back(pMesh);
         aiNode *node = new aiNode;
         node->mParent = root;
@@ -389,7 +385,7 @@ void STLImporter::LoadASCIIFile( aiNode *root ) {
         pScene->mMeshes[ i ] = meshes[i];
     }
 
-    root->mNumChildren = nodes.size();
+    root->mNumChildren = (unsigned int) nodes.size();
     root->mChildren = new aiNode*[ root->mNumChildren ];
     for ( size_t i=0; i<nodes.size(); ++i ) {
         root->mChildren[ i ] = nodes[ i ];
@@ -449,28 +445,47 @@ bool STLImporter::LoadBinaryFile()
 
     pMesh->mNumVertices = pMesh->mNumFaces*3;
 
-    aiVector3D* vp,*vn;
-    vp = pMesh->mVertices = new aiVector3D[pMesh->mNumVertices];
-    vn = pMesh->mNormals = new aiVector3D[pMesh->mNumVertices];
+    
+    aiVector3D *vp = pMesh->mVertices = new aiVector3D[pMesh->mNumVertices];
+    aiVector3D *vn = pMesh->mNormals = new aiVector3D[pMesh->mNumVertices];
 
-    for (unsigned int i = 0; i < pMesh->mNumFaces;++i) {
-
+    typedef aiVector3t<float> aiVector3F;
+    aiVector3F* theVec;
+    aiVector3F theVec3F;
+    
+    for ( unsigned int i = 0; i < pMesh->mNumFaces; ++i ) {
         // NOTE: Blender sometimes writes empty normals ... this is not
         // our fault ... the RemoveInvalidData helper step should fix that
-        *vn = *((aiVector3D*)sz);
-        sz += sizeof(aiVector3D);
+
+        // There's one normal for the face in the STL; use it three times
+        // for vertex normals
+        theVec = (aiVector3F*) sz;
+        ::memcpy( &theVec3F, theVec, sizeof(aiVector3F) );
+        vn->x = theVec3F.x; vn->y = theVec3F.y; vn->z = theVec3F.z;
         *(vn+1) = *vn;
         *(vn+2) = *vn;
+        ++theVec;
         vn += 3;
 
-        *vp++ = *((aiVector3D*)sz);
-        sz += sizeof(aiVector3D);
+        // vertex 1
+        ::memcpy( &theVec3F, theVec, sizeof(aiVector3F) );
+        vp->x = theVec3F.x; vp->y = theVec3F.y; vp->z = theVec3F.z;
+        ++theVec;
+        ++vp;
 
-        *vp++ = *((aiVector3D*)sz);
-        sz += sizeof(aiVector3D);
+        // vertex 2
+        ::memcpy( &theVec3F, theVec, sizeof(aiVector3F) );
+        vp->x = theVec3F.x; vp->y = theVec3F.y; vp->z = theVec3F.z;
+        ++theVec;
+        ++vp;
 
-        *vp++ = *((aiVector3D*)sz);
-        sz += sizeof(aiVector3D);
+        // vertex 3
+        ::memcpy( &theVec3F, theVec, sizeof(aiVector3F) );
+        vp->x = theVec3F.x; vp->y = theVec3F.y; vp->z = theVec3F.z;
+        ++theVec;
+        ++vp;
+        
+        sz = (const unsigned char*) theVec;
 
         uint16_t color = *((uint16_t*)sz);
         sz += 2;
@@ -510,6 +525,12 @@ bool STLImporter::LoadBinaryFile()
 
     // now copy faces
     addFacesToMesh(pMesh);
+
+    // add all created meshes to the single node
+    pScene->mRootNode->mNumMeshes = pScene->mNumMeshes;
+    pScene->mRootNode->mMeshes = new unsigned int[pScene->mNumMeshes];
+    for (unsigned int i = 0; i < pScene->mNumMeshes; i++)
+        pScene->mRootNode->mMeshes[i] = i;
 
     if (bIsMaterialise && !pMesh->mColors[0])
     {
