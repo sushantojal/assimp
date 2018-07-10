@@ -925,6 +925,78 @@ namespace {
 
 }
 
+inline void Animation::Read(Value& pJSON_Object, Asset& pAsset_Root)
+{
+    if(Value* animation = FindArray(pJSON_Object, "animations")) {
+        if(Value* samplers = FindArray(pJSON_Object, "samplers")) {
+            this->Samplers.resize(samplers->Size());
+            for(unsigned int i = 0; i < samplers->Size(); ++ i) {
+                
+                Value& sampler = (*samplers)[i];
+                AnimSampler samp = this->Samplers[i];
+
+
+                //update samp with accessor ids
+                samp.id = i;
+
+                if(Value * input = FindUInt(sampler, "input")) {
+                    sampler.TIME = pAsset_Root.accessors.Retrieve(input->GetFloat());
+                }
+
+                ReadMember(sampler, "interpolation", samp.interpolation );
+
+                //if(Value)
+
+
+
+            //     if (!it->value.IsUint()) continue;
+            //     const char* attr = it->name.GetString();
+            //     // Valid attribute semantics include POSITION, NORMAL, TANGENT, TEXCOORD, COLOR, JOINT, JOINTMATRIX,
+            //     // and WEIGHT.Attribute semantics can be of the form[semantic]_[set_index], e.g., TEXCOORD_0, TEXCOORD_1, etc.
+
+            //     int undPos = 0;
+            //     Mesh::AccessorList* vec = 0;
+            //     if (GetAttribVector(prim, attr, vec, undPos)) {
+            //         size_t idx = (attr[undPos] == '_') ? atoi(attr + undPos + 1) : 0;
+            //         if ((*vec).size() <= idx) (*vec).resize(idx + 1);
+            //         (*vec)[idx] = pAsset_Root.accessors.Retrieve(it->value.GetUint());
+            //     }
+
+
+            // if (Value* indices = FindUInt(primitive, "indices")) {
+			// 	prim.indices = pAsset_Root.accessors.Retrieve(indices->GetUint());
+            // }
+
+
+                //update animparameters from accessors
+
+
+
+            }
+
+
+
+        }
+
+
+        if(Value* channels = FindArray(pJSON_Object, "channels"))
+        {
+            this->Channels.resize(channels->Size());
+            for(unsigned int i = 0; i < channels->Size(); ++i)
+            {
+                Value& channel = (*channels)[i];
+                AnimChannel animChannel = this->Channels[i];
+
+                //set sampler params
+
+            }
+        }
+    }
+
+
+
+}
+
 
 inline void Mesh::Read(Value& pJSON_Object, Asset& pAsset_Root)
 {
