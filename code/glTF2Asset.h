@@ -867,10 +867,10 @@ namespace glTF2
     struct Animation : public Object
     {
         struct AnimSampler {
-            int id;                       //!< The index of this sampler.
-            Ref<Accessor> TIME;            //!< The ID of a parameter in this animation to use as key-frame input.
-            std::string interpolation;    //!< Type of interpolation algorithm to use between key-frames.
-            std::string output;           //!< The ID of a parameter in this animation to use as key-frame output.
+            std::string id;                 //!< The ID of this sampler.
+            std::string input;              //!< The ID of a parameter in this animation to use as key-frame input.
+            std::string interpolation;      //!< Type of interpolation algorithm to use between key-frames.
+            std::string output;             //!< The ID of a parameter in this animation to use as key-frame output.
         };
 
         struct AnimChannel {

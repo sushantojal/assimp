@@ -701,20 +701,6 @@ void glTF2Importer::ImportNodes(glTF2::Asset& r)
     //}
 }
 
-
-
-void glTF2Importer::ImportAnimations(glTF2::Asset& r)
-{
-    
-    std::vector<aiAnimation *> anims;
-
-    
-
-
-    //CopyVector(anims, mScene->mAnimations, mScene->mNumAnimations);
-
-}
-
 void glTF2Importer::ImportEmbeddedTextures(glTF2::Asset& r)
 {
     embeddedTexIdxs.resize(r.images.Size(), -1);
@@ -782,8 +768,6 @@ void glTF2Importer::InternReadFile(const std::string& pFile, aiScene* pScene, IO
     ImportCameras(asset);
 
     ImportNodes(asset);
-
-    ImportAnimations(asset);
 
     // TODO: it does not split the loaded vertices, should it?
     //pScene->mFlags |= AI_SCENE_FLAGS_NON_VERBOSE_FORMAT;
