@@ -83,7 +83,6 @@ private:
     void ImportCameras(glTF2::Asset& a);
     void ImportLights(glTF2::Asset& a);
     void ImportNodes(glTF2::Asset& a);
-
 };
 
 } // Namespace assimp
