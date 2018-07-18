@@ -110,48 +110,48 @@ namespace glTF2 {
 
     inline void Write(Value& obj, Animation& a, AssetWriter& w)
     {
-        /****************** Channels *******************/
-        Value channels;
-        channels.SetArray();
-        channels.Reserve(unsigned(a.Channels.size()), w.mAl);
+        // /****************** Channels *******************/
+        // Value channels;
+        // channels.SetArray();
+        // channels.Reserve(unsigned(a.Channels.size()), w.mAl);
 
-        for (size_t i = 0; i < unsigned(a.Channels.size()); ++i) {
-            Animation::AnimChannel& c = a.Channels[i];
-            Value valChannel;
-            valChannel.SetObject();
-            {
-                valChannel.AddMember("sampler", c.sampler, w.mAl);
+        // for (size_t i = 0; i < unsigned(a.Channels.size()); ++i) {
+        //     Animation::AnimChannel& c = a.Channels[i];
+        //     Value valChannel;
+        //     valChannel.SetObject();
+        //     {
+        //         valChannel.AddMember("sampler", c.sampler, w.mAl);
 
-                Value valTarget;
-                valTarget.SetObject();
-                {
-                    valTarget.AddMember("node", c.target.node->index, w.mAl);
-                    valTarget.AddMember("path", c.target.path, w.mAl);
-                }
-                valChannel.AddMember("target", valTarget, w.mAl);
-            }
-            channels.PushBack(valChannel, w.mAl);
-        }
-        obj.AddMember("channels", channels, w.mAl);
+        //         Value valTarget;
+        //         valTarget.SetObject();
+        //         {
+        //             valTarget.AddMember("node", c.target.node->index, w.mAl);
+        //             valTarget.AddMember("path", c.target.path, w.mAl);
+        //         }
+        //         valChannel.AddMember("target", valTarget, w.mAl);
+        //     }
+        //     channels.PushBack(valChannel, w.mAl);
+        // }
+        // obj.AddMember("channels", channels, w.mAl);
 
-        /****************** Samplers *******************/
-        Value valSamplers;
-        valSamplers.SetArray();
+        // /****************** Samplers *******************/
+        // Value valSamplers;
+        // valSamplers.SetArray();
 
-        for (size_t i = 0; i < unsigned(a.Samplers.size()); ++i) {
-            Animation::AnimSampler& s = a.Samplers[i];
-            Value valSampler;
-            valSampler.SetObject();
-            {
-                Ref<Accessor> inputAccessor = a.GetAccessor(s.input);
-                Ref<Accessor> outputAccessor = a.GetAccessor(s.output);
-                valSampler.AddMember("input", inputAccessor->index, w.mAl);
-                valSampler.AddMember("interpolation", s.interpolation, w.mAl);
-                valSampler.AddMember("output", outputAccessor->index, w.mAl);
-            }
-            valSamplers.PushBack(valSampler, w.mAl);
-        }
-        obj.AddMember("samplers", valSamplers, w.mAl);
+        // for (size_t i = 0; i < unsigned(a.Samplers.size()); ++i) {
+        //     Animation::AnimSampler& s = a.Samplers[i];
+        //     Value valSampler;
+        //     valSampler.SetObject();
+        //     {
+        //         Ref<Accessor> inputAccessor = a.GetAccessor(s.input);
+        //         Ref<Accessor> outputAccessor = a.GetAccessor(s.output);
+        //         valSampler.AddMember("input", inputAccessor->index, w.mAl);
+        //         valSampler.AddMember("interpolation", s.interpolation, w.mAl);
+        //         valSampler.AddMember("output", outputAccessor->index, w.mAl);
+        //     }
+        //     valSamplers.PushBack(valSampler, w.mAl);
+        // }
+        // obj.AddMember("samplers", valSamplers, w.mAl);
     }
 
     inline void Write(Value& obj, Buffer& b, AssetWriter& w)

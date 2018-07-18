@@ -705,13 +705,80 @@ void glTF2Importer::ImportNodes(glTF2::Asset& r)
 
 void glTF2Importer::ImportAnimations(glTF2::Asset& r)
 {
-    
     std::vector<aiAnimation *> anims;
+    anims.resize(r.animations.Size());
 
-    
+    for(size_t i = 0; i < r.animations.Size(); i ++ )
+    {
+        Animation animRead = r.animations[i];
+
+        std::vector<aiNodeAnim *> animChannels;
+        animChannels.resize(animRead.Channels.size());
+
+        for(size_t j = 0; j < animRead.Channels.size(); j ++ )
+        {
+            aiNodeAnim &aiChannel = *animChannels[j];
+
+            Animation::AnimChannel channelRead = animRead.Channels[j];
+            Animation::AnimSampler samplerRead = animRead.Samplers[channelRead.sampler];
+
+            //get the time stamps
+            Accessor::Indexer timeStamps = samplerRead.TIME->GetIndexer();
+            ai_assert(timeStamps.IsValid());
+
+            //get the keys
+            Accessor::Indexer keys = samplerRead.output->GetIndexer();
+            ai_assert(keys.IsValid());
+
+            Animation::AnimChannel::AnimTarget targetRead = channelRead.target;
+            std::string keyType = targetRead.path;
+            int keyCount = samplerRead.TIME->count;
+
+            if(keyType == "translation")
+            {
+                aiChannel.mPositionKeys = new aiVectorKey[keyCount];
+                aiChannel.mNumPositionKeys = keyCount;
+            }
+            else if(keyType == "rotation")
+            {
+                aiChannel.mRotationKeys = new aiQuatKey[keyCount];
+                aiChannel.mNumRotationKeys = keyCount;
+            }
+            else if(keyType == "scale")
+            {
+                aiChannel.mScalingKeys = new aiVectorKey[keyCount];
+                aiChannel.mNumScalingKeys = keyCount;
+            }
 
 
-    //CopyVector(anims, mScene->mAnimations, mScene->mNumAnimations);
+            for(size_t k = 0; k < keyCount; k ++ )
+            {
+                aiChannel.mPositionKeys[i].mTime = timeStamps.GetValue(k);
+
+                if(keyType == "translation")
+                {
+                    aiChannel.mPositionKeys[i].mValue = keys.GetValue(k);
+                }
+                else if(keyType == "rotation")
+                {
+                    aiChannel.mScalingKeys[i].mValue = keys.GetValue(k);
+                }
+                else if(keyType == "scale")
+                {
+                    aiChannel.mRotationKeys[i].mValue = keys.GetValue(k);
+                }
+            }
+
+            aiChannel.mNodeName = channelRead.target.node.name;
+            aiChannel.mPreState = ;
+            aiChannel.mPostState = ;
+
+        }
+
+        anims[i]->mChannels = &animChannels[0];
+    }
+
+    CopyVector(anims, mScene->mAnimations, mScene->mNumAnimations);
 
 }
 

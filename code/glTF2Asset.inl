@@ -935,47 +935,22 @@ inline void Animation::Read(Value& pJSON_Object, Asset& pAsset_Root)
                 Value& sampler = (*samplers)[i];
                 AnimSampler samp = this->Samplers[i];
 
-
-                //update samp with accessor ids
+                //get the sampler index
                 samp.id = i;
 
+                //get the time stamps pointed to by the accessor
                 if(Value * input = FindUInt(sampler, "input")) {
-                    sampler.TIME = pAsset_Root.accessors.Retrieve(input->GetFloat());
+                    samp.TIME = pAsset_Root.accessors.Retrieve(input->GetUint());
                 }
 
+                //get the string describing the interpolation type
                 ReadMember(sampler, "interpolation", samp.interpolation );
 
-                //if(Value)
-
-
-
-            //     if (!it->value.IsUint()) continue;
-            //     const char* attr = it->name.GetString();
-            //     // Valid attribute semantics include POSITION, NORMAL, TANGENT, TEXCOORD, COLOR, JOINT, JOINTMATRIX,
-            //     // and WEIGHT.Attribute semantics can be of the form[semantic]_[set_index], e.g., TEXCOORD_0, TEXCOORD_1, etc.
-
-            //     int undPos = 0;
-            //     Mesh::AccessorList* vec = 0;
-            //     if (GetAttribVector(prim, attr, vec, undPos)) {
-            //         size_t idx = (attr[undPos] == '_') ? atoi(attr + undPos + 1) : 0;
-            //         if ((*vec).size() <= idx) (*vec).resize(idx + 1);
-            //         (*vec)[idx] = pAsset_Root.accessors.Retrieve(it->value.GetUint());
-            //     }
-
-
-            // if (Value* indices = FindUInt(primitive, "indices")) {
-			// 	prim.indices = pAsset_Root.accessors.Retrieve(indices->GetUint());
-            // }
-
-
-                //update animparameters from accessors
-
-
-
+                //get the buffer pointing to the animation attribute values over each of the time stamps
+                if(Value * output = FindUInt(sampler, "output")) {
+                    samp.output = pAsset_Root.accessors.Retrieve(output->GetUint());
+                }
             }
-
-
-
         }
 
 
@@ -987,8 +962,17 @@ inline void Animation::Read(Value& pJSON_Object, Asset& pAsset_Root)
                 Value& channel = (*channels)[i];
                 AnimChannel animChannel = this->Channels[i];
 
-                //set sampler params
+                //get sampler index
+                ReadMember(channel, "sampler", animChannel.sampler );
 
+                if (Value* target_attrbs = FindObject(channel, "target")) {
+
+                    //get node index of the target of the channel
+                    animChannel.target.node = pAsset_Root.nodes.Retrieve((*target_attrbs)[0].GetUint());
+
+                    //get target property of channel
+                    animChannel.target.path = (*target_attrbs)[1].GetString();
+                }
             }
         }
     }

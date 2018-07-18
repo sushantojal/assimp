@@ -864,13 +864,63 @@ namespace glTF2
         void Read(Value& obj, Asset& r);
     };
 
+
+    // struct Animation : public Object
+    // {
+    //     struct AnimSampler {
+    //         std::string id;                       //!< The index of this sampler.
+    //         std::string input;            //!< The ID of a parameter in this animation to use as key-frame input.
+    //         std::string interpolation;    //!< Type of interpolation algorithm to use between key-frames.
+    //         std::string output;           //!< The ID of a parameter in this animation to use as key-frame output.
+    //     };
+
+    //     struct AnimChannel {
+    //         int sampler;                 //!< The index of a sampler in the containing animation's samplers property.
+
+    //         struct AnimTarget {
+    //             Ref<Node> node;          //!< The node to animate.
+    //             std::string path;        //!< The name of property of the node to animate ("translation", "rotation", or "scale").
+    //         } target;
+    //     };
+
+    //     struct AnimParameters {
+    //         Ref<Accessor> TIME;           //!< Accessor reference to a buffer storing a array of floating point scalar values.
+    //         Ref<Accessor> rotation;       //!< Accessor reference to a buffer storing a array of four-component floating-point vectors.
+    //         Ref<Accessor> scale;          //!< Accessor reference to a buffer storing a array of three-component floating-point vectors.
+    //         Ref<Accessor> translation;    //!< Accessor reference to a buffer storing a array of three-component floating-point vectors.
+    //     };
+        
+
+    //     std::vector<AnimChannel> Channels;            //!< Connect the output values of the key-frame animation to a specific node in the hierarchy.
+    //     AnimParameters Parameters;                    //!< The samplers that interpolate between the key-frames.
+    //     std::vector<AnimSampler> Samplers;         //!< The parameterized inputs representing the key-frame data.
+
+    //     Animation() {}
+    //     void Read(Value& obj, Asset& r);
+
+    //     //! Get accessor given an animation parameter name.
+    //     Ref<Accessor> GetAccessor(std::string name) {
+    //         if (name == "TIME") {
+    //             return Parameters.TIME;
+    //         } else if (name == "rotation") {
+    //             return Parameters.rotation;
+    //         } else if (name == "scale") {
+    //             return Parameters.scale;
+    //         } else if (name == "translation") {
+    //             return Parameters.translation;
+    //         }
+    //         return Ref<Accessor>();
+    //     }
+    // };
+
+
     struct Animation : public Object
     {
         struct AnimSampler {
-            int id;                       //!< The index of this sampler.
+            int id;                         //!< The index of this sampler.
             Ref<Accessor> TIME;            //!< The ID of a parameter in this animation to use as key-frame input.
-            std::string interpolation;    //!< Type of interpolation algorithm to use between key-frames.
-            std::string output;           //!< The ID of a parameter in this animation to use as key-frame output.
+            std::string interpolation;      //!< Type of interpolation algorithm to use between key-frames.
+            Ref<Accessor> output;           //!< The ID of a parameter in this animation to use as key-frame output.
         };
 
         struct AnimChannel {
@@ -881,35 +931,15 @@ namespace glTF2
                 std::string path;        //!< The name of property of the node to animate ("translation", "rotation", or "scale").
             } target;
         };
-
-        struct AnimParameters {
-            Ref<Accessor> TIME;           //!< Accessor reference to a buffer storing a array of floating point scalar values.
-            Ref<Accessor> rotation;       //!< Accessor reference to a buffer storing a array of four-component floating-point vectors.
-            Ref<Accessor> scale;          //!< Accessor reference to a buffer storing a array of three-component floating-point vectors.
-            Ref<Accessor> translation;    //!< Accessor reference to a buffer storing a array of three-component floating-point vectors.
-        };
-
+        
         std::vector<AnimChannel> Channels;            //!< Connect the output values of the key-frame animation to a specific node in the hierarchy.
-        AnimParameters Parameters;                    //!< The samplers that interpolate between the key-frames.
         std::vector<AnimSampler> Samplers;         //!< The parameterized inputs representing the key-frame data.
 
         Animation() {}
         void Read(Value& obj, Asset& r);
-
-        //! Get accessor given an animation parameter name.
-        Ref<Accessor> GetAccessor(std::string name) {
-            if (name == "TIME") {
-                return Parameters.TIME;
-            } else if (name == "rotation") {
-                return Parameters.rotation;
-            } else if (name == "scale") {
-                return Parameters.scale;
-            } else if (name == "translation") {
-                return Parameters.translation;
-            }
-            return Ref<Accessor>();
-        }
     };
+
+
 
 
     //! Base class for LazyDict that acts as an interface

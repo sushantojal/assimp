@@ -938,161 +938,161 @@ void glTF2Exporter::ExportMetadata()
 
 inline void ExtractAnimationData(Asset& mAsset, std::string& animId, Ref<Animation>& animRef, Ref<Buffer>& buffer, const aiNodeAnim* nodeChannel, float ticksPerSecond)
 {
-    // Loop over the data and check to see if it exactly matches an existing buffer.
-    //    If yes, then reference the existing corresponding accessor.
-    //    Otherwise, add to the buffer and create a new accessor.
+    // // Loop over the data and check to see if it exactly matches an existing buffer.
+    // //    If yes, then reference the existing corresponding accessor.
+    // //    Otherwise, add to the buffer and create a new accessor.
 
-    size_t counts[3] = {
-        nodeChannel->mNumPositionKeys,
-        nodeChannel->mNumScalingKeys,
-        nodeChannel->mNumRotationKeys,
-    };
-    size_t numKeyframes = 1;
-    for (int i = 0; i < 3; ++i) {
-        if (counts[i] > numKeyframes) {
-            numKeyframes = counts[i];
-        }
-    }
+    // size_t counts[3] = {
+    //     nodeChannel->mNumPositionKeys,
+    //     nodeChannel->mNumScalingKeys,
+    //     nodeChannel->mNumRotationKeys,
+    // };
+    // size_t numKeyframes = 1;
+    // for (int i = 0; i < 3; ++i) {
+    //     if (counts[i] > numKeyframes) {
+    //         numKeyframes = counts[i];
+    //     }
+    // }
 
-    //-------------------------------------------------------
-    // Extract TIME parameter data.
-    // Check if the timeStamps are the same for mPositionKeys, mRotationKeys, and mScalingKeys.
-    if(nodeChannel->mNumPositionKeys > 0) {
-        typedef float TimeType;
-        std::vector<TimeType> timeData;
-        timeData.resize(numKeyframes);
-        for (size_t i = 0; i < numKeyframes; ++i) {
-            size_t frameIndex = i * nodeChannel->mNumPositionKeys / numKeyframes;
-            // mTime is measured in ticks, but GLTF time is measured in seconds, so convert.
-            // Check if we have to cast type here. e.g. uint16_t()
-            timeData[i] = static_cast<float>(nodeChannel->mPositionKeys[frameIndex].mTime / ticksPerSecond);
-        }
+    // //-------------------------------------------------------
+    // // Extract TIME parameter data.
+    // // Check if the timeStamps are the same for mPositionKeys, mRotationKeys, and mScalingKeys.
+    // if(nodeChannel->mNumPositionKeys > 0) {
+    //     typedef float TimeType;
+    //     std::vector<TimeType> timeData;
+    //     timeData.resize(numKeyframes);
+    //     for (size_t i = 0; i < numKeyframes; ++i) {
+    //         size_t frameIndex = i * nodeChannel->mNumPositionKeys / numKeyframes;
+    //         // mTime is measured in ticks, but GLTF time is measured in seconds, so convert.
+    //         // Check if we have to cast type here. e.g. uint16_t()
+    //         timeData[i] = static_cast<float>(nodeChannel->mPositionKeys[frameIndex].mTime / ticksPerSecond);
+    //     }
 
-        Ref<Accessor> timeAccessor = ExportData(mAsset, animId, buffer, static_cast<unsigned int>(numKeyframes), &timeData[0], AttribType::SCALAR, AttribType::SCALAR, ComponentType_FLOAT);
-        if (timeAccessor) animRef->Parameters.TIME = timeAccessor;
-    }
+    //     Ref<Accessor> timeAccessor = ExportData(mAsset, animId, buffer, static_cast<unsigned int>(numKeyframes), &timeData[0], AttribType::SCALAR, AttribType::SCALAR, ComponentType_FLOAT);
+    //     if (timeAccessor) animRef->Parameters.TIME = timeAccessor;
+    // }
 
-    //-------------------------------------------------------
-    // Extract translation parameter data
-    if(nodeChannel->mNumPositionKeys > 0) {
-        C_STRUCT aiVector3D* translationData = new aiVector3D[numKeyframes];
-        for (size_t i = 0; i < numKeyframes; ++i) {
-            size_t frameIndex = i * nodeChannel->mNumPositionKeys / numKeyframes;
-            translationData[i] = nodeChannel->mPositionKeys[frameIndex].mValue;
-        }
+    // //-------------------------------------------------------
+    // // Extract translation parameter data
+    // if(nodeChannel->mNumPositionKeys > 0) {
+    //     C_STRUCT aiVector3D* translationData = new aiVector3D[numKeyframes];
+    //     for (size_t i = 0; i < numKeyframes; ++i) {
+    //         size_t frameIndex = i * nodeChannel->mNumPositionKeys / numKeyframes;
+    //         translationData[i] = nodeChannel->mPositionKeys[frameIndex].mValue;
+    //     }
 
-        Ref<Accessor> tranAccessor = ExportData(mAsset, animId, buffer, static_cast<unsigned int>(numKeyframes), translationData, AttribType::VEC3, AttribType::VEC3, ComponentType_FLOAT);
-        if ( tranAccessor ) {
-            animRef->Parameters.translation = tranAccessor;
-        }
-        delete[] translationData;
-    }
+    //     Ref<Accessor> tranAccessor = ExportData(mAsset, animId, buffer, static_cast<unsigned int>(numKeyframes), translationData, AttribType::VEC3, AttribType::VEC3, ComponentType_FLOAT);
+    //     if ( tranAccessor ) {
+    //         animRef->Parameters.translation = tranAccessor;
+    //     }
+    //     delete[] translationData;
+    // }
 
-    //-------------------------------------------------------
-    // Extract scale parameter data
-    if(nodeChannel->mNumScalingKeys > 0) {
-        C_STRUCT aiVector3D* scaleData = new aiVector3D[numKeyframes];
-        for (size_t i = 0; i < numKeyframes; ++i) {
-            size_t frameIndex = i * nodeChannel->mNumScalingKeys / numKeyframes;
-            scaleData[i] = nodeChannel->mScalingKeys[frameIndex].mValue;
-        }
+    // //-------------------------------------------------------
+    // // Extract scale parameter data
+    // if(nodeChannel->mNumScalingKeys > 0) {
+    //     C_STRUCT aiVector3D* scaleData = new aiVector3D[numKeyframes];
+    //     for (size_t i = 0; i < numKeyframes; ++i) {
+    //         size_t frameIndex = i * nodeChannel->mNumScalingKeys / numKeyframes;
+    //         scaleData[i] = nodeChannel->mScalingKeys[frameIndex].mValue;
+    //     }
 
-        Ref<Accessor> scaleAccessor = ExportData(mAsset, animId, buffer, static_cast<unsigned int>(numKeyframes), scaleData, AttribType::VEC3, AttribType::VEC3, ComponentType_FLOAT);
-        if ( scaleAccessor ) {
-            animRef->Parameters.scale = scaleAccessor;
-        }
-        delete[] scaleData;
-    }
+    //     Ref<Accessor> scaleAccessor = ExportData(mAsset, animId, buffer, static_cast<unsigned int>(numKeyframes), scaleData, AttribType::VEC3, AttribType::VEC3, ComponentType_FLOAT);
+    //     if ( scaleAccessor ) {
+    //         animRef->Parameters.scale = scaleAccessor;
+    //     }
+    //     delete[] scaleData;
+    // }
 
-    //-------------------------------------------------------
-    // Extract rotation parameter data
-    if(nodeChannel->mNumRotationKeys > 0) {
-        vec4* rotationData = new vec4[numKeyframes];
-        for (size_t i = 0; i < numKeyframes; ++i) {
-            size_t frameIndex = i * nodeChannel->mNumRotationKeys / numKeyframes;
-            rotationData[i][0] = nodeChannel->mRotationKeys[frameIndex].mValue.x;
-            rotationData[i][1] = nodeChannel->mRotationKeys[frameIndex].mValue.y;
-            rotationData[i][2] = nodeChannel->mRotationKeys[frameIndex].mValue.z;
-            rotationData[i][3] = nodeChannel->mRotationKeys[frameIndex].mValue.w;
-        }
+    // //-------------------------------------------------------
+    // // Extract rotation parameter data
+    // if(nodeChannel->mNumRotationKeys > 0) {
+    //     vec4* rotationData = new vec4[numKeyframes];
+    //     for (size_t i = 0; i < numKeyframes; ++i) {
+    //         size_t frameIndex = i * nodeChannel->mNumRotationKeys / numKeyframes;
+    //         rotationData[i][0] = nodeChannel->mRotationKeys[frameIndex].mValue.x;
+    //         rotationData[i][1] = nodeChannel->mRotationKeys[frameIndex].mValue.y;
+    //         rotationData[i][2] = nodeChannel->mRotationKeys[frameIndex].mValue.z;
+    //         rotationData[i][3] = nodeChannel->mRotationKeys[frameIndex].mValue.w;
+    //     }
 
-        Ref<Accessor> rotAccessor = ExportData(mAsset, animId, buffer, static_cast<unsigned int>(numKeyframes), rotationData, AttribType::VEC4, AttribType::VEC4, ComponentType_FLOAT);
-        if ( rotAccessor ) {
-            animRef->Parameters.rotation = rotAccessor;
-        }
-        delete[] rotationData;
-    }
+    //     Ref<Accessor> rotAccessor = ExportData(mAsset, animId, buffer, static_cast<unsigned int>(numKeyframes), rotationData, AttribType::VEC4, AttribType::VEC4, ComponentType_FLOAT);
+    //     if ( rotAccessor ) {
+    //         animRef->Parameters.rotation = rotAccessor;
+    //     }
+    //     delete[] rotationData;
+    // }
 }
 
 void glTF2Exporter::ExportAnimations()
 {
-    Ref<Buffer> bufferRef = mAsset->buffers.Get(unsigned (0));
+    // Ref<Buffer> bufferRef = mAsset->buffers.Get(unsigned (0));
 
-    for (unsigned int i = 0; i < mScene->mNumAnimations; ++i) {
-        const aiAnimation* anim = mScene->mAnimations[i];
+    // for (unsigned int i = 0; i < mScene->mNumAnimations; ++i) {
+    //     const aiAnimation* anim = mScene->mAnimations[i];
 
-        std::string nameAnim = "anim";
-        if (anim->mName.length > 0) {
-            nameAnim = anim->mName.C_Str();
-        }
+    //     std::string nameAnim = "anim";
+    //     if (anim->mName.length > 0) {
+    //         nameAnim = anim->mName.C_Str();
+    //     }
 
-        for (unsigned int channelIndex = 0; channelIndex < anim->mNumChannels; ++channelIndex) {
-            const aiNodeAnim* nodeChannel = anim->mChannels[channelIndex];
+    //     for (unsigned int channelIndex = 0; channelIndex < anim->mNumChannels; ++channelIndex) {
+    //         const aiNodeAnim* nodeChannel = anim->mChannels[channelIndex];
 
-            // It appears that assimp stores this type of animation as multiple animations.
-            // where each aiNodeAnim in mChannels animates a specific node.
-            std::string name = nameAnim + "_" + to_string(channelIndex);
-            name = mAsset->FindUniqueID(name, "animation");
-            Ref<Animation> animRef = mAsset->animations.Create(name);
+    //         // It appears that assimp stores this type of animation as multiple animations.
+    //         // where each aiNodeAnim in mChannels animates a specific node.
+    //         std::string name = nameAnim + "_" + to_string(channelIndex);
+    //         name = mAsset->FindUniqueID(name, "animation");
+    //         Ref<Animation> animRef = mAsset->animations.Create(name);
 
-            // Parameters
-            ExtractAnimationData(*mAsset, name, animRef, bufferRef, nodeChannel, static_cast<float>(anim->mTicksPerSecond));
+    //         // Parameters
+    //         ExtractAnimationData(*mAsset, name, animRef, bufferRef, nodeChannel, static_cast<float>(anim->mTicksPerSecond));
 
-            for (unsigned int j = 0; j < 3; ++j) {
-                std::string channelType;
-                int channelSize;
-                switch (j) {
-                    case 0:
-                        channelType = "rotation";
-                        channelSize = nodeChannel->mNumRotationKeys;
-                        break;
-                    case 1:
-                        channelType = "scale";
-                        channelSize = nodeChannel->mNumScalingKeys;
-                        break;
-                    case 2:
-                        channelType = "translation";
-                        channelSize = nodeChannel->mNumPositionKeys;
-                        break;
-                }
+    //         for (unsigned int j = 0; j < 3; ++j) {
+    //             std::string channelType;
+    //             int channelSize;
+    //             switch (j) {
+    //                 case 0:
+    //                     channelType = "rotation";
+    //                     channelSize = nodeChannel->mNumRotationKeys;
+    //                     break;
+    //                 case 1:
+    //                     channelType = "scale";
+    //                     channelSize = nodeChannel->mNumScalingKeys;
+    //                     break;
+    //                 case 2:
+    //                     channelType = "translation";
+    //                     channelSize = nodeChannel->mNumPositionKeys;
+    //                     break;
+    //             }
 
-                if (channelSize < 1) { continue; }
+    //             if (channelSize < 1) { continue; }
 
-                Animation::AnimChannel tmpAnimChannel;
-                Animation::AnimSampler tmpAnimSampler;
+    //             Animation::AnimChannel tmpAnimChannel;
+    //             Animation::AnimSampler tmpAnimSampler;
 
-                tmpAnimChannel.sampler = static_cast<int>(animRef->Samplers.size());
-                tmpAnimChannel.target.path = channelType;
-                tmpAnimSampler.output = channelType;
-                tmpAnimSampler.id = name + "_" + channelType;
+    //             tmpAnimChannel.sampler = static_cast<int>(animRef->Samplers.size());
+    //             tmpAnimChannel.target.path = channelType;
+    //             tmpAnimSampler.output = channelType;
+    //             tmpAnimSampler.id = name + "_" + channelType;
 
-                tmpAnimChannel.target.node = mAsset->nodes.Get(nodeChannel->mNodeName.C_Str());
+    //             tmpAnimChannel.target.node = mAsset->nodes.Get(nodeChannel->mNodeName.C_Str());
 
-                tmpAnimSampler.input = "TIME";
-                tmpAnimSampler.interpolation = "LINEAR";
+    //             tmpAnimSampler.input = "TIME";
+    //             tmpAnimSampler.interpolation = "LINEAR";
 
-                animRef->Channels.push_back(tmpAnimChannel);
-                animRef->Samplers.push_back(tmpAnimSampler);
-            }
+    //             animRef->Channels.push_back(tmpAnimChannel);
+    //             animRef->Samplers.push_back(tmpAnimSampler);
+    //         }
 
-        }
+    //     }
 
         // Assimp documentation staes this is not used (not implemented)
         // for (unsigned int channelIndex = 0; channelIndex < anim->mNumMeshChannels; ++channelIndex) {
         //     const aiMeshAnim* meshChannel = anim->mMeshChannels[channelIndex];
         // }
 
-    } // End: for-loop mNumAnimations
+    // } // End: for-loop mNumAnimations
 }
 
 
