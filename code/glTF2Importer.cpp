@@ -753,26 +753,25 @@ void glTF2Importer::ImportAnimations(glTF2::Asset& r)
 
             for(size_t k = 0; k < keyCount; k ++ )
             {
-                aiChannel.mPositionKeys[i].mTime = timeStamps.GetValue(k);
+                aiChannel.mPositionKeys[i].mTime = timeStamps.GetValue<int>(k);
 
                 if(keyType == "translation")
                 {
-                    aiChannel.mPositionKeys[i].mValue = keys.GetValue(k);
+                    aiChannel.mPositionKeys[i].mValue = keys.GetValue<aiVector3D>(k);
                 }
                 else if(keyType == "rotation")
                 {
-                    aiChannel.mScalingKeys[i].mValue = keys.GetValue(k);
+                    aiChannel.mScalingKeys[i].mValue = keys.GetValue<aiVector3D>(k);
                 }
                 else if(keyType == "scale")
                 {
-                    aiChannel.mRotationKeys[i].mValue = keys.GetValue(k);
+                    aiChannel.mRotationKeys[i].mValue = keys.GetValue<aiQuaternion>(k);
                 }
             }
 
-            aiChannel.mNodeName = channelRead.target.node.name;
-            aiChannel.mPreState = ;
-            aiChannel.mPostState = ;
-
+            aiChannel.mNodeName = channelRead.target.node->name;
+            aiChannel.mPreState = aiAnimBehaviour_DEFAULT;
+            aiChannel.mPostState = aiAnimBehaviour_CONSTANT;
         }
 
         anims[i]->mChannels = &animChannels[0];

@@ -977,8 +977,6 @@ inline void Animation::Read(Value& pJSON_Object, Asset& pAsset_Root)
         }
     }
 
-
-
 }
 
 
