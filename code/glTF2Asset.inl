@@ -45,6 +45,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // Header files, Assimp
 #include <assimp/DefaultLogger.hpp>
 
+#include <fstream>
+#include <iostream>
+
 using namespace Assimp;
 
 namespace glTF2 {
@@ -925,53 +928,56 @@ namespace {
 
 }
 
+
 inline void Animation::Read(Value& pJSON_Object, Asset& pAsset_Root)
 {
-    if(Value* animation = FindArray(pJSON_Object, "animations")) {
-        if(Value* samplers = FindArray(pJSON_Object, "samplers")) {
-            this->Samplers.resize(samplers->Size());
-            for(unsigned int i = 0; i < samplers->Size(); ++ i) {
-                
-                Value& sampler = (*samplers)[i];
-                AnimSampler samp = this->Samplers[i];
 
-                //get the sampler index
-                samp.id = i;
+    if(Value* samplers = FindArray(pJSON_Object, "samplers")) {
+        this->Samplers.resize(samplers->Size());
 
-                //get the time stamps pointed to by the accessor
-                if(Value * input = FindUInt(sampler, "input")) {
-                    samp.TIME = pAsset_Root.accessors.Retrieve(input->GetUint());
-                }
+        for(unsigned int i = 0; i < samplers->Size(); ++ i) {
+            Value& sampler = (*samplers)[i];
+            AnimSampler *samp = &(this->Samplers[i]);
 
-                //get the string describing the interpolation type
-                ReadMember(sampler, "interpolation", samp.interpolation );
+            //get the sampler index
+            samp->id = i;
 
-                //get the buffer pointing to the animation attribute values over each of the time stamps
-                if(Value * output = FindUInt(sampler, "output")) {
-                    samp.output = pAsset_Root.accessors.Retrieve(output->GetUint());
-                }
+            //get the time stamps pointed to by the accessor
+            if(Value * input = FindUInt(sampler, "input")) {
+                samp->TIME = pAsset_Root.accessors.Retrieve(input->GetUint());
+            }
+
+            //get the string describing the interpolation type
+            ReadMember(sampler, "interpolation", samp->interpolation );
+
+            //get the buffer pointing to the animation attribute values over each of the time stamps
+            if(Value * output = FindUInt(sampler, "output")) {
+                samp->output = pAsset_Root.accessors.Retrieve(output->GetUint());
             }
         }
+    }
 
 
-        if(Value* channels = FindArray(pJSON_Object, "channels"))
+    if(Value* channels = FindArray(pJSON_Object, "channels"))
+    {
+        
+        this->Channels.resize(channels->Size());
+        for(unsigned int i = 0; i < channels->Size(); ++i)
         {
-            this->Channels.resize(channels->Size());
-            for(unsigned int i = 0; i < channels->Size(); ++i)
-            {
-                Value& channel = (*channels)[i];
-                AnimChannel animChannel = this->Channels[i];
+            Value& channel = (*channels)[i];
+            AnimChannel *animChannel = &(this->Channels[i]);
 
-                //get sampler index
-                ReadMember(channel, "sampler", animChannel.sampler );
+            //get sampler index
+            ReadMember(channel, "sampler", animChannel->sampler );
 
-                if (Value* target_attrbs = FindObject(channel, "target")) {
+            if (Value* target_attrbs = FindObject(channel, "target")) {
 
-                    //get node index of the target of the channel
-                    animChannel.target.node = pAsset_Root.nodes.Retrieve((*target_attrbs)[0].GetUint());
+                if (Value* nodeIdx = FindUInt(*target_attrbs, "node")) {
+                    animChannel->target.node = pAsset_Root.nodes.Retrieve((*nodeIdx).GetUint());
+                }
 
-                    //get target property of channel
-                    animChannel.target.path = (*target_attrbs)[1].GetString();
+                if (Value* pathVal = FindString(*target_attrbs, "path")) {
+                    animChannel->target.path =(*pathVal).GetString();
                 }
             }
         }
@@ -982,6 +988,11 @@ inline void Animation::Read(Value& pJSON_Object, Asset& pAsset_Root)
 
 inline void Mesh::Read(Value& pJSON_Object, Asset& pAsset_Root)
 {
+    std::ofstream f;
+    f.open("/sdcard/assimp2.txt", std::ios_base::app);
+    f<<"inside read mesh \n";
+    f.close();
+
     if (Value* name = FindMember(pJSON_Object, "name")) {
         this->name = name->GetString();
     }
@@ -1295,15 +1306,21 @@ inline void Asset::Load(const std::string& pFile, bool isBinary)
         mDicts[i]->AttachToDocument(doc);
     }
 
+
+    animations.Retrieve(0);
+
+
     // Read the "scene" property, which specifies which scene to load
     // and recursively load everything referenced by it
     if (Value* scene = FindUInt(doc, "scene")) {
         unsigned int sceneIndex = scene->GetUint();
 
         Ref<Scene> s = scenes.Retrieve(sceneIndex);
-
         this->scene = s;
     }
+
+    //if(Value* animation = FindArray(doc, "animations")) {
+    //}
 
     // Clean up
     for (size_t i = 0; i < mDicts.size(); ++i) {

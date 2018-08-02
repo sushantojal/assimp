@@ -45,6 +45,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // Header files, Assimp
 #include <assimp/DefaultLogger.hpp>
+#include <fstream>
+#include <iostream>
 
 #ifdef ASSIMP_IMPORTER_GLTF_USE_OPEN3DGC
 	// Header files, Open3DGC.
@@ -814,8 +816,10 @@ namespace {
     }
 }
 
+
 inline void Mesh::Read(Value& pJSON_Object, Asset& pAsset_Root)
 {
+
 	/****************** Mesh primitives ******************/
 	if (Value* primitives = FindArray(pJSON_Object, "primitives")) {
         this->primitives.resize(primitives->Size());

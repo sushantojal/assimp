@@ -347,6 +347,7 @@ static inline bool CheckValidFacesIndices(aiFace* faces, unsigned nFaces, unsign
 }
 #endif // ASSIMP_BUILD_DEBUG
 
+
 void glTF2Importer::ImportMeshes(glTF2::Asset& r)
 {
     std::vector<aiMesh*> meshes;
@@ -701,13 +702,13 @@ void glTF2Importer::ImportNodes(glTF2::Asset& r)
     //}
 }
 
-
-
 void glTF2Importer::ImportAnimations(glTF2::Asset& r)
 {
     std::vector<aiAnimation *> anims;
     anims.resize(r.animations.Size());
+    mScene->mNumAnimations = r.animations.Size();
 
+    float animDuration = 0.0;
     for(size_t i = 0; i < r.animations.Size(); i ++ )
     {
         Animation animRead = r.animations[i];
@@ -717,7 +718,8 @@ void glTF2Importer::ImportAnimations(glTF2::Asset& r)
 
         for(size_t j = 0; j < animRead.Channels.size(); j ++ )
         {
-            aiNodeAnim &aiChannel = *animChannels[j];
+            aiNodeAnim * aiChannel = new aiNodeAnim();
+            animChannels[j] = aiChannel;
 
             Animation::AnimChannel channelRead = animRead.Channels[j];
             Animation::AnimSampler samplerRead = animRead.Samplers[channelRead.sampler];
@@ -734,50 +736,75 @@ void glTF2Importer::ImportAnimations(glTF2::Asset& r)
             std::string keyType = targetRead.path;
             int keyCount = samplerRead.TIME->count;
 
+
             if(keyType == "translation")
             {
-                aiChannel.mPositionKeys = new aiVectorKey[keyCount];
-                aiChannel.mNumPositionKeys = keyCount;
+                aiChannel->mPositionKeys = new aiVectorKey[keyCount];
+                aiChannel->mNumPositionKeys = keyCount;
             }
             else if(keyType == "rotation")
             {
-                aiChannel.mRotationKeys = new aiQuatKey[keyCount];
-                aiChannel.mNumRotationKeys = keyCount;
+                aiChannel->mRotationKeys = new aiQuatKey[keyCount];
+                aiChannel->mNumRotationKeys = keyCount;
             }
             else if(keyType == "scale")
             {
-                aiChannel.mScalingKeys = new aiVectorKey[keyCount];
-                aiChannel.mNumScalingKeys = keyCount;
+                aiChannel->mScalingKeys = new aiVectorKey[keyCount];
+                aiChannel->mNumScalingKeys = keyCount;
             }
 
 
             for(size_t k = 0; k < keyCount; k ++ )
             {
-                aiChannel.mPositionKeys[i].mTime = timeStamps.GetValue<int>(k);
+                float currTimeStamp = timeStamps.GetValue<float>(k);
+                float firstTimeStamp = 0;
+
+                if(k == 0)
+                    firstTimeStamp = currTimeStamp;
+
+                if(k == keyCount - 1)
+                    animDuration = std::max(currTimeStamp - firstTimeStamp, animDuration);
 
                 if(keyType == "translation")
                 {
-                    aiChannel.mPositionKeys[i].mValue = keys.GetValue<aiVector3D>(k);
-                }
-                else if(keyType == "rotation")
-                {
-                    aiChannel.mScalingKeys[i].mValue = keys.GetValue<aiVector3D>(k);
+                    aiChannel->mPositionKeys[k].mTime = currTimeStamp;
+                    aiChannel->mPositionKeys[k].mValue = keys.GetValue<aiVector3D>(k);
+
                 }
                 else if(keyType == "scale")
                 {
-                    aiChannel.mRotationKeys[i].mValue = keys.GetValue<aiQuaternion>(k);
+                    aiChannel->mScalingKeys[k].mTime = currTimeStamp;
+                    aiChannel->mScalingKeys[k].mValue = keys.GetValue<aiVector3D>(k);
+                }
+                else if(keyType == "rotation")
+                {
+                    aiChannel->mRotationKeys[k].mTime = currTimeStamp;
+                    aiChannel->mRotationKeys[k].mValue = keys.GetValue<aiQuaternion>(k);
                 }
             }
 
-            aiChannel.mNodeName = channelRead.target.node->name;
-            aiChannel.mPreState = aiAnimBehaviour_DEFAULT;
-            aiChannel.mPostState = aiAnimBehaviour_CONSTANT;
+            aiChannel->mNodeName = channelRead.target.node->name;
+            aiChannel->mPreState = aiAnimBehaviour_DEFAULT;
+            aiChannel->mPostState = aiAnimBehaviour_DEFAULT;
         }
+        anims[i] = new aiAnimation();
+        anims[i]->mDuration = animDuration;
+        anims[i]->mNumChannels = animRead.Channels.size();
 
-        anims[i]->mChannels = &animChannels[0];
+        aiNodeAnim **channels = new aiNodeAnim* [anims[i]->mNumChannels];
+
+        for(int itr = 0; itr < anims[i]->mNumChannels; ++itr)
+            channels[itr] = animChannels[itr];
+
+        anims[i]->mChannels = channels;
+        anims[i]->mTicksPerSecond = 1.0;
     }
 
-    CopyVector(anims, mScene->mAnimations, mScene->mNumAnimations);
+    aiAnimation ** animations = new aiAnimation* [mScene->mNumAnimations];
+    for(int itr = 0; itr < mScene->mNumAnimations; ++itr)
+        animations[itr] = anims[itr];
+
+    mScene->mAnimations = animations;
 
 }
 

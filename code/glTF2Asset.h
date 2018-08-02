@@ -940,8 +940,6 @@ namespace glTF2
     };
 
 
-
-
     //! Base class for LazyDict that acts as an interface
     class LazyDictBase
     {
