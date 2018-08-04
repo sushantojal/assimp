@@ -771,8 +771,10 @@ void glTF2Importer::InternReadFile(const std::string& pFile, aiScene* pScene, IO
 
     // TODO: it does not split the loaded vertices, should it?
     //pScene->mFlags |= AI_SCENE_FLAGS_NON_VERBOSE_FORMAT;
-    MakeVerboseFormatProcess process;
-    process.Execute(pScene);
+
+    //GVRf: not splitting vertices after import
+    //MakeVerboseFormatProcess process;
+    //process.Execute(pScene);
 
 
     if (pScene->mNumMeshes == 0) {
