@@ -753,12 +753,10 @@ void glTF2Importer::ImportAnimations(glTF2::Asset& r)
                 aiChannel->mNumScalingKeys = keyCount;
             }
 
-
+            float firstTimeStamp = 0;
             for(size_t k = 0; k < keyCount; k ++ )
             {
                 float currTimeStamp = timeStamps.GetValue<float>(k);
-                float firstTimeStamp = 0;
-
                 if(k == 0)
                     firstTimeStamp = currTimeStamp;
 
@@ -783,7 +781,8 @@ void glTF2Importer::ImportAnimations(glTF2::Asset& r)
                 }
             }
 
-            aiChannel->mNodeName = channelRead.target.node->name;
+
+            aiChannel->mNodeName = channelRead.target.node->name.empty() ? channelRead.target.node->id : channelRead.target.node->name;
             aiChannel->mPreState = aiAnimBehaviour_DEFAULT;
             aiChannel->mPostState = aiAnimBehaviour_DEFAULT;
         }
