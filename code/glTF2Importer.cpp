@@ -707,6 +707,7 @@ void glTF2Importer::ImportAnimations(glTF2::Asset& r)
     std::vector<aiAnimation *> anims;
     anims.resize(r.animations.Size());
     mScene->mNumAnimations = r.animations.Size();
+    int numNodeAnimChannels = 0; int numMorphAnimChannels = 0;
 
     float animDuration = 0.0;
     for(size_t i = 0; i < r.animations.Size(); i ++ )
@@ -714,12 +715,15 @@ void glTF2Importer::ImportAnimations(glTF2::Asset& r)
         Animation animRead = r.animations[i];
 
         std::vector<aiNodeAnim *> animChannels;
-        animChannels.resize(animRead.Channels.size());
+        std::vector<aiMeshAnim *> meshAnimChannels;
 
         for(size_t j = 0; j < animRead.Channels.size(); j ++ )
         {
-            aiNodeAnim * aiChannel = new aiNodeAnim();
-            animChannels[j] = aiChannel;
+            // aiNodeAnim * aiChannel = new aiNodeAnim();
+
+            aiNodeAnim * aiChannel;
+            aiMeshAnim * aiMorphChannel;
+
 
             Animation::AnimChannel channelRead = animRead.Channels[j];
             Animation::AnimSampler samplerRead = animRead.Samplers[channelRead.sampler];
@@ -736,21 +740,35 @@ void glTF2Importer::ImportAnimations(glTF2::Asset& r)
             std::string keyType = targetRead.path;
             int keyCount = samplerRead.TIME->count;
 
+            if(keyType == "weights")
+                aiMorphChannel = new aiMeshMorphAnim();
+            else
+                aiChannel = new aiNodeAnim();
+
 
             if(keyType == "translation")
             {
                 aiChannel->mPositionKeys = new aiVectorKey[keyCount];
                 aiChannel->mNumPositionKeys = keyCount;
+                numNodeAnimChannels++;
             }
             else if(keyType == "rotation")
             {
                 aiChannel->mRotationKeys = new aiQuatKey[keyCount];
                 aiChannel->mNumRotationKeys = keyCount;
+                numNodeAnimChannels++;
             }
             else if(keyType == "scale")
             {
                 aiChannel->mScalingKeys = new aiVectorKey[keyCount];
                 aiChannel->mNumScalingKeys = keyCount;
+                numNodeAnimChannels++;
+            }
+            else if(keyType == "weights")
+            {
+                aiMorphChannel->mNumKeys = keyCount;
+                aiMorphChannel->mKeys = new aiMeshMorphKey[keyCount];
+                numMorphAnimChannels++;
             }
 
             float firstTimeStamp = 0;
@@ -779,23 +797,50 @@ void glTF2Importer::ImportAnimations(glTF2::Asset& r)
                     aiChannel->mRotationKeys[k].mTime = currTimeStamp;
                     aiChannel->mRotationKeys[k].mValue = keys.GetValue<aiQuaternion>(k);
                 }
+                else if(keyType == "weights")
+                {
+                    aiMorphChannel->mMeshMorphKeys[k].mTime = currTimeStamp;
+                    double * blendWeights = new double[keys.count];
+                    for(int itr = 0; itr < keys.count < itr ++ )
+                        blendWeights[i] = keys.GetValue<double>(itr);
+                    aiMorphChannel->mMeshMorphKeys[k].mKeys = blendWeights;
+                }
             }
 
 
-            aiChannel->mNodeName = channelRead.target.node->name.empty() ? channelRead.target.node->id : channelRead.target.node->name;
-            aiChannel->mPreState = aiAnimBehaviour_DEFAULT;
-            aiChannel->mPostState = aiAnimBehaviour_DEFAULT;
+            if(keyType == "weights")
+            {
+                aiMorphChannel->mName = channelRead.target.node->name.empty() ? channelRead.target.node->id : channelRead.target.node->name;
+                meshAnimChannels.push_back(aiMorphChannel);
+            }
+            else
+            {
+                aiChannel->mNodeName = channelRead.target.node->name.empty() ? channelRead.target.node->id : channelRead.target.node->name;
+                aiChannel->mPreState = aiAnimBehaviour_DEFAULT;
+                aiChannel->mPostState = aiAnimBehaviour_DEFAULT;
+
+                animChannels.push_back(aiChannel);
+            }
+
+            
         }
         anims[i] = new aiAnimation();
         anims[i]->mDuration = animDuration;
-        anims[i]->mNumChannels = animRead.Channels.size();
+        anims[i]->mNumChannels = numNodeAnimChannels;
+        anims[i]->mNumMorphMeshChannels = numMorphAnimChannels;
 
-        aiNodeAnim **channels = new aiNodeAnim* [anims[i]->mNumChannels];
+        aiNodeAnim **channels = new aiNodeAnim* [numNodeAnimChannels];
+        aiMeshMorphAnim ** morphChannels = new aiMeshMorphAnim[numMorphAnimChannels];
 
         for(int itr = 0; itr < anims[i]->mNumChannels; ++itr)
             channels[itr] = animChannels[itr];
 
+        for(int itr = 0; itr < anims[i]->mNumMorphMeshChannels; ++itr)
+            morphChannels[itr] = meshAnimChannels[itr];
+
+
         anims[i]->mChannels = channels;
+        anims[i]->mMorphMeshChannels = morphChannels;
         anims[i]->mTicksPerSecond = 1.0;
     }
 
