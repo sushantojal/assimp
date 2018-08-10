@@ -708,8 +708,8 @@ void glTF2Importer::ImportAnimations(glTF2::Asset& r)
     anims.resize(r.animations.Size());
     mScene->mNumAnimations = r.animations.Size();
     int numNodeAnimChannels = 0; int numMorphAnimChannels = 0;
-
     float animDuration = 0.0;
+
     for(size_t i = 0; i < r.animations.Size(); i ++ )
     {
         Animation animRead = r.animations[i];
@@ -741,36 +741,34 @@ void glTF2Importer::ImportAnimations(glTF2::Asset& r)
             int keyCount = samplerRead.TIME->count;
 
             if(keyType == "weights")
+            {
                 aiMorphChannel = new aiMeshMorphAnim();
-            else
-                aiChannel = new aiNodeAnim();
-
-
-            if(keyType == "translation")
-            {
-                aiChannel->mPositionKeys = new aiVectorKey[keyCount];
-                aiChannel->mNumPositionKeys = keyCount;
-                numNodeAnimChannels++;
-            }
-            else if(keyType == "rotation")
-            {
-                aiChannel->mRotationKeys = new aiQuatKey[keyCount];
-                aiChannel->mNumRotationKeys = keyCount;
-                numNodeAnimChannels++;
-            }
-            else if(keyType == "scale")
-            {
-                aiChannel->mScalingKeys = new aiVectorKey[keyCount];
-                aiChannel->mNumScalingKeys = keyCount;
-                numNodeAnimChannels++;
-            }
-            else if(keyType == "weights")
-            {
                 aiMorphChannel->mNumKeys = keyCount;
                 aiMorphChannel->mKeys = new aiMeshMorphKey[keyCount];
                 numMorphAnimChannels++;
             }
+            else
+            {
+                aiChannel = new aiNodeAnim();
+                numNodeAnimChannels++;
 
+                if(keyType == "translation")
+                {
+                    aiChannel->mPositionKeys = new aiVectorKey[keyCount];
+                    aiChannel->mNumPositionKeys = keyCount;
+                }
+                else if(keyType == "rotation")
+                {
+                    aiChannel->mRotationKeys = new aiQuatKey[keyCount];
+                    aiChannel->mNumRotationKeys = keyCount;
+                }
+                else if(keyType == "scale")
+                {
+                    aiChannel->mScalingKeys = new aiVectorKey[keyCount];
+                    aiChannel->mNumScalingKeys = keyCount;
+                }
+            }
+            
             float firstTimeStamp = 0;
             for(size_t k = 0; k < keyCount; k ++ )
             {
