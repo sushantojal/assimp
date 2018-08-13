@@ -715,14 +715,14 @@ void glTF2Importer::ImportAnimations(glTF2::Asset& r)
         Animation animRead = r.animations[i];
 
         std::vector<aiNodeAnim *> animChannels;
-        std::vector<aiMeshAnim *> meshAnimChannels;
+        std::vector<aiMeshMorphAnim *> meshAnimChannels;
 
         for(size_t j = 0; j < animRead.Channels.size(); j ++ )
         {
             // aiNodeAnim * aiChannel = new aiNodeAnim();
 
             aiNodeAnim * aiChannel;
-            aiMeshAnim * aiMorphChannel;
+            aiMeshMorphAnim * aiMorphChannel;
 
 
             Animation::AnimChannel channelRead = animRead.Channels[j];
@@ -797,11 +797,11 @@ void glTF2Importer::ImportAnimations(glTF2::Asset& r)
                 }
                 else if(keyType == "weights")
                 {
-                    aiMorphChannel->mMeshMorphKeys[k].mTime = currTimeStamp;
-                    double * blendWeights = new double[keys.count];
-                    for(int itr = 0; itr < keys.count < itr ++ )
+                    aiMorphChannel->mKeys[k].mTime = currTimeStamp;
+                    double * blendWeights = new double[samplerRead.output->count];
+                    for(int itr = 0; itr < samplerRead.output->count ; itr ++ )
                         blendWeights[i] = keys.GetValue<double>(itr);
-                    aiMorphChannel->mMeshMorphKeys[k].mKeys = blendWeights;
+                    aiMorphChannel->mKeys[k].mWeights = blendWeights;
                 }
             }
 
@@ -828,7 +828,7 @@ void glTF2Importer::ImportAnimations(glTF2::Asset& r)
         anims[i]->mNumMorphMeshChannels = numMorphAnimChannels;
 
         aiNodeAnim **channels = new aiNodeAnim* [numNodeAnimChannels];
-        aiMeshMorphAnim ** morphChannels = new aiMeshMorphAnim[numMorphAnimChannels];
+        aiMeshMorphAnim ** morphChannels = new aiMeshMorphAnim* [numMorphAnimChannels];
 
         for(int itr = 0; itr < anims[i]->mNumChannels; ++itr)
             channels[itr] = animChannels[itr];
