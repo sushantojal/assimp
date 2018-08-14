@@ -723,6 +723,7 @@ void glTF2Importer::ImportAnimations(glTF2::Asset& r)
 
             aiNodeAnim * aiChannel;
             aiMeshMorphAnim * aiMorphChannel;
+            int numMorphTargets = 0;
 
 
             Animation::AnimChannel channelRead = animRead.Channels[j];
@@ -746,6 +747,7 @@ void glTF2Importer::ImportAnimations(glTF2::Asset& r)
                 aiMorphChannel->mNumKeys = keyCount;
                 aiMorphChannel->mKeys = new aiMeshMorphKey[keyCount];
                 numMorphAnimChannels++;
+                numMorphTargets = samplerRead.output->count / keyCount;
             }
             else
             {
@@ -797,11 +799,14 @@ void glTF2Importer::ImportAnimations(glTF2::Asset& r)
                 }
                 else if(keyType == "weights")
                 {
+                    
                     aiMorphChannel->mKeys[k].mTime = currTimeStamp;
-                    double * blendWeights = new double[samplerRead.output->count];
-                    for(int itr = 0; itr < samplerRead.output->count ; itr ++ )
-                        blendWeights[i] = keys.GetValue<double>(itr);
+                    
+                    double * blendWeights = new double[numMorphTargets];
+                    for(int itr = 0; itr < numMorphTargets ; itr ++ )
+                        blendWeights[i] = keys.GetValue<double>(itr + numMorphTargets * k);
                     aiMorphChannel->mKeys[k].mWeights = blendWeights;
+                    aiMorphChannel->mKeys[k].mNumValuesAndWeights = numMorphTargets;
                 }
             }
 
@@ -839,7 +844,11 @@ void glTF2Importer::ImportAnimations(glTF2::Asset& r)
 
         anims[i]->mChannels = channels;
         anims[i]->mMorphMeshChannels = morphChannels;
+
         anims[i]->mTicksPerSecond = 1.0;
+
+        animChannels.clear();
+        meshAnimChannels.clear();
     }
 
     aiAnimation ** animations = new aiAnimation* [mScene->mNumAnimations];
@@ -847,6 +856,8 @@ void glTF2Importer::ImportAnimations(glTF2::Asset& r)
         animations[itr] = anims[itr];
 
     mScene->mAnimations = animations;
+
+    anims.clear();
 
 }
 
