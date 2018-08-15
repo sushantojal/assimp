@@ -804,7 +804,7 @@ void glTF2Importer::ImportAnimations(glTF2::Asset& r)
                     
                     double * blendWeights = new double[numMorphTargets];
                     for(int itr = 0; itr < numMorphTargets ; itr ++ )
-                        blendWeights[i] = keys.GetValue<double>(itr + numMorphTargets * k);
+                        blendWeights[itr] = (double)(keys.GetValue<float>(itr + numMorphTargets * k));
                     aiMorphChannel->mKeys[k].mWeights = blendWeights;
                     aiMorphChannel->mKeys[k].mNumValuesAndWeights = numMorphTargets;
                 }
@@ -933,8 +933,10 @@ void glTF2Importer::InternReadFile(const std::string& pFile, aiScene* pScene, IO
 
     // TODO: it does not split the loaded vertices, should it?
     //pScene->mFlags |= AI_SCENE_FLAGS_NON_VERBOSE_FORMAT;
-    MakeVerboseFormatProcess process;
-    process.Execute(pScene);
+
+    //GVRf: not splitting vertices after import
+    // MakeVerboseFormatProcess process;
+    // process.Execute(pScene);
 
 
     if (pScene->mNumMeshes == 0) {
