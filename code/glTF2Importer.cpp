@@ -708,7 +708,7 @@ void glTF2Importer::ImportAnimations(glTF2::Asset& r)
     anims.resize(r.animations.Size());
     mScene->mNumAnimations = r.animations.Size();
     int numNodeAnimChannels = 0; int numMorphAnimChannels = 0;
-    float animDuration = 0.0;
+    double animDuration = 0.0;
 
     for(size_t i = 0; i < r.animations.Size(); i ++ )
     {
@@ -719,8 +719,6 @@ void glTF2Importer::ImportAnimations(glTF2::Asset& r)
 
         for(size_t j = 0; j < animRead.Channels.size(); j ++ )
         {
-            // aiNodeAnim * aiChannel = new aiNodeAnim();
-
             aiNodeAnim * aiChannel;
             aiMeshMorphAnim * aiMorphChannel;
             int numMorphTargets = 0;
@@ -733,13 +731,17 @@ void glTF2Importer::ImportAnimations(glTF2::Asset& r)
             Accessor::Indexer timeStamps = samplerRead.TIME->GetIndexer();
             ai_assert(timeStamps.IsValid());
 
-            //get the keys
-            Accessor::Indexer keys = samplerRead.output->GetIndexer();
-            ai_assert(keys.IsValid());
-
             Animation::AnimChannel::AnimTarget targetRead = channelRead.target;
             std::string keyType = targetRead.path;
             int keyCount = samplerRead.TIME->count;
+
+            aiVector3D * positionKeys = nullptr;
+            aiVector3D * scaleKeys = nullptr;
+            aiQuaternion * rotKeys = nullptr;
+            float * blendkeys = nullptr;
+
+
+            //based on keytype extract data from accessor
 
             if(keyType == "weights")
             {
@@ -748,6 +750,7 @@ void glTF2Importer::ImportAnimations(glTF2::Asset& r)
                 aiMorphChannel->mKeys = new aiMeshMorphKey[keyCount];
                 numMorphAnimChannels++;
                 numMorphTargets = samplerRead.output->count / keyCount;
+                samplerRead.output->ExtractData(blendkeys);
             }
             else
             {
@@ -758,23 +761,29 @@ void glTF2Importer::ImportAnimations(glTF2::Asset& r)
                 {
                     aiChannel->mPositionKeys = new aiVectorKey[keyCount];
                     aiChannel->mNumPositionKeys = keyCount;
+                    samplerRead.output->ExtractData(positionKeys);
                 }
                 else if(keyType == "rotation")
                 {
                     aiChannel->mRotationKeys = new aiQuatKey[keyCount];
                     aiChannel->mNumRotationKeys = keyCount;
+                    samplerRead.output->ExtractData(rotKeys);
+
                 }
                 else if(keyType == "scale")
                 {
                     aiChannel->mScalingKeys = new aiVectorKey[keyCount];
                     aiChannel->mNumScalingKeys = keyCount;
+                    samplerRead.output->ExtractData(scaleKeys);
                 }
             }
             
-            float firstTimeStamp = 0;
+
+            //update channels based on input/output data
+            double firstTimeStamp = 0;
             for(size_t k = 0; k < keyCount; k ++ )
             {
-                float currTimeStamp = timeStamps.GetValue<float>(k);
+                double currTimeStamp = timeStamps.GetValue<float>(k);
                 if(k == 0)
                     firstTimeStamp = currTimeStamp;
 
@@ -784,19 +793,28 @@ void glTF2Importer::ImportAnimations(glTF2::Asset& r)
                 if(keyType == "translation")
                 {
                     aiChannel->mPositionKeys[k].mTime = currTimeStamp;
-                    aiChannel->mPositionKeys[k].mValue = keys.GetValue<aiVector3D>(k);
+                    aiChannel->mPositionKeys[k].mValue = positionKeys[k];
 
                 }
                 else if(keyType == "scale")
                 {
                     aiChannel->mScalingKeys[k].mTime = currTimeStamp;
-                    aiChannel->mScalingKeys[k].mValue = keys.GetValue<aiVector3D>(k);
+                    aiChannel->mScalingKeys[k].mValue = scaleKeys[k];
                 }
                 else if(keyType == "rotation")
                 {
                     aiChannel->mRotationKeys[k].mTime = currTimeStamp;
-                    aiChannel->mRotationKeys[k].mValue = keys.GetValue<aiQuaternion>(k);
+                    aiChannel->mRotationKeys[k].mValue = rotKeys[k];
+
                 }
+
+
+                /**
+                 * Extracted buffer is an array of floats. We need to segment
+                 * every 'numMorphTargets' floats. This segment is out key for 
+                 * the channel.
+                 **/
+
                 else if(keyType == "weights")
                 {
                     
@@ -804,7 +822,7 @@ void glTF2Importer::ImportAnimations(glTF2::Asset& r)
                     
                     double * blendWeights = new double[numMorphTargets];
                     for(int itr = 0; itr < numMorphTargets ; itr ++ )
-                        blendWeights[itr] = (double)(keys.GetValue<float>(itr + numMorphTargets * k));
+                        blendWeights[itr] = blendkeys[itr + numMorphTargets * k];
                     aiMorphChannel->mKeys[k].mWeights = blendWeights;
                     aiMorphChannel->mKeys[k].mNumValuesAndWeights = numMorphTargets;
                 }
@@ -825,6 +843,11 @@ void glTF2Importer::ImportAnimations(glTF2::Asset& r)
                 animChannels.push_back(aiChannel);
             }
 
+
+            delete positionKeys;
+            delete scaleKeys;
+            delete rotKeys;
+            delete blendkeys;
             
         }
         anims[i] = new aiAnimation();
