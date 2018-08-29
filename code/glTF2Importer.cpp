@@ -480,8 +480,6 @@ void glTF2Importer::ImportMeshes(glTF2::Asset& r)
             }
 
 
-
-
             if (prim.indices) {
                 aiFace* faces = 0;
                 unsigned int nFaces = 0;
@@ -558,6 +556,13 @@ void glTF2Importer::ImportMeshes(glTF2::Asset& r)
                 }
             }
 
+            aiBone* bones = new aiBone [10];
+
+
+
+
+
+            aim->mBones = &bones;
 
             if (prim.material) {
                 aim->mMaterialIndex = prim.material.GetIndex();

@@ -894,13 +894,10 @@ namespace {
         else if ((pos = Compare(attr, "COLOR"))) {
             v = &(p.attributes.color);
         }
-        else if ((pos = Compare(attr, "JOINT"))) {
+        else if ((pos = Compare(attr, "JOINTS_0"))) {
             v = &(p.attributes.joint);
         }
-        else if ((pos = Compare(attr, "JOINTMATRIX"))) {
-            v = &(p.attributes.jointmatrix);
-        }
-        else if ((pos = Compare(attr, "WEIGHT"))) {
+        else if ((pos = Compare(attr, "WEIGHTS_0"))) {
             v = &(p.attributes.weight);
         }
         else return false;
@@ -1068,6 +1065,31 @@ inline void Mesh::Read(Value& pJSON_Object, Asset& pAsset_Root)
     }
 }
 
+
+inline void Skin::Read(Value& pJSON_Object, Asset& pAsset_Root)
+{
+    if (Value* name = FindMember(pJSON_Object, "name")) {
+        this->name = name->GetString();
+    }
+
+    if(Value * ibm = FindUInt(pJSON_Object, "inverseBindMatrices")) {
+        this->inverseBindMatrices = pAsset_Root.accessors.Retrieve(ibm->GetUint());
+    }
+
+    if (Value* joints = FindArray(pJSON_Object, "joints")) {
+        for(unsigned int i = 0; i < joints->Size(); ++ i )
+        {
+            if (!(*joints)[i].IsUint()) continue;
+            Ref<Node> node = pAsset_Root.nodes.Retrieve((*joints)[i].GetUint());
+            if(node)
+                this->jointNames.push_back(node);
+        }
+    }
+    //todo: read in skeleten attribute?
+}
+
+
+
 inline void Camera::Read(Value& obj, Asset& /*r*/)
 {
     type = MemberOrDefault(obj, "type", Camera::Perspective);
@@ -1129,6 +1151,10 @@ inline void Node::Read(Value& obj, Asset& r)
         this->camera = r.cameras.Retrieve(camera->GetUint());
         if (this->camera)
             this->camera->id = this->id;
+    }
+
+    if (Value* skin = FindUInt(obj, "skin")) {
+        this->skin = r.skins.Retrieve(skin->GetUint());
     }
 }
 
@@ -1306,9 +1332,8 @@ inline void Asset::Load(const std::string& pFile, bool isBinary)
         mDicts[i]->AttachToDocument(doc);
     }
 
-
-    animations.Retrieve(0);
-
+    if(FindMember(doc, "animations"))
+        animations.Retrieve(0);
 
     // Read the "scene" property, which specifies which scene to load
     // and recursively load everything referenced by it
@@ -1318,9 +1343,6 @@ inline void Asset::Load(const std::string& pFile, bool isBinary)
         Ref<Scene> s = scenes.Retrieve(sceneIndex);
         this->scene = s;
     }
-
-    //if(Value* animation = FindArray(doc, "animations")) {
-    //}
 
     // Clean up
     for (size_t i = 0; i < mDicts.size(); ++i) {
