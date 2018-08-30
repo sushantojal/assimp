@@ -556,14 +556,6 @@ void glTF2Importer::ImportMeshes(glTF2::Asset& r)
                 }
             }
 
-            aiBone* bones = new aiBone [10];
-
-
-
-
-
-            aim->mBones = &bones;
-
             if (prim.material) {
                 aim->mMaterialIndex = prim.material.GetIndex();
             }
@@ -671,6 +663,40 @@ aiNode* ImportNode(aiScene* pScene, glTF2::Asset& r, std::vector<unsigned int>& 
                 ainode->mMeshes[k] = j;
             }
         }
+
+        //need to create aiBones here because skin information is held by the node
+        for(size_t i = 0; i < count; ++ i)
+        {
+            if(node.skin)
+            {
+
+                int numBones = node.skin->jointNames.size();
+                std::vector<Ref<Node>> boneNodes = node.skin->jointNames;
+
+                aiMatrix4x4 * ibms = new aiMatrix4x4[numBones];
+                node.skin->inverseBindMatrices->ExtractData(ibms);
+
+                aiBone * bones = new aiBone[numBones];
+                std::vector< Ref<Mesh> > meshes = node.meshes;
+                
+                for(size_t j = 0; j < numBones; ++ j)
+                {
+                    bones[i].mName = node.name.empty() ? node.id : node.name;
+                    
+                    bones[i].mOffsetMatrix = ibms[j];
+
+                    
+
+                }
+
+
+                delete ibms;
+
+
+
+            }
+        }
+
     }
 
     if (node.camera) {
