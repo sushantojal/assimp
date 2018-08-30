@@ -665,35 +665,69 @@ aiNode* ImportNode(aiScene* pScene, glTF2::Asset& r, std::vector<unsigned int>& 
         }
 
         //need to create aiBones here because skin information is held by the node
-        for(size_t i = 0; i < count; ++ i)
+        for (size_t i = 0; i < node.meshes.size(); ++i)
         {
+
+            Mesh& mesh = *(node.meshes[i]);
             if(node.skin)
             {
-
-                int numBones = node.skin->jointNames.size();
-                std::vector<Ref<Node>> boneNodes = node.skin->jointNames;
-
-                aiMatrix4x4 * ibms = new aiMatrix4x4[numBones];
-                node.skin->inverseBindMatrices->ExtractData(ibms);
-
-                aiBone * bones = new aiBone[numBones];
-                std::vector< Ref<Mesh> > meshes = node.meshes;
-                
-                for(size_t j = 0; j < numBones; ++ j)
+                for (unsigned int p = 0; p < mesh.primitives.size(); ++p)
                 {
-                    bones[i].mName = node.name.empty() ? node.id : node.name;
-                    
-                    bones[i].mOffsetMatrix = ibms[j];
 
-                    
+                    int numBones = node.skin->jointNames.size();
+                    std::vector<std::vector<aiVertexWeight>>(numBones, nullptr);
+
+
+
+                    std::vector<Ref<Node>> boneNodes = node.skin->jointNames;
+
+                    aiMatrix4x4 * ibms = new aiMatrix4x4[numBones];
+                    node.skin->inverseBindMatrices->ExtractData(ibms);
+
+                    aiBone * bones = new aiBone[numBones];
+                    std::vector< Ref<Mesh> > meshes = node.meshes;
+                
+                    for(size_t j = 0; j < numBones; ++ j)
+                    {
+                        //set the bone name as the node name
+                        bones[i].mName = node.name.empty() ? node.id : node.name;
+                        //set the inverse bind matrix
+                        bones[i].mOffsetMatrix = ibms[j];
+                    }
+                    delete ibms;
+
+                    vec4 * jointAttr = nullptr;
+                    vec4 * weightAttr = nullptr;
+
+                    Mesh::Primitive& prim = mesh.primitives[p];
+                    Mesh::Primitive::Attributes& attr = prim.attributes;
+
+                    if (attr.joint.size() > 0 && attr.joint[0])
+                        attr.joint[0]->ExtractData(jointAttr);
+
+                    if (attr.weight.size() > 0 && attr.weight[0])
+                        attr.weight[0]->ExtractData(weightAttr);
+
+
+                    Accessor::Indexer joints = attr.joint[0]->GetIndexer();
+                    Accessor::Indexer weights = attr.weight[0]->GetIndexer();
+                    Accessor::Indexer meshIndices = prim.indices->GetIndexer();
+
+
+                    for (unsigned int k = 0; k < attr.joint[0]->count; k++)
+                    {   
+                        vec4 currjoints = joints.GetValue<vec4>(k);
+                        vec4 currweights = weights.GetValue<vec4>(k);
+                        int currIndex = meshIndices.GetUInt(k);
+
+                        
+
+
+
+                    }
+
 
                 }
-
-
-                delete ibms;
-
-
-
             }
         }
 
