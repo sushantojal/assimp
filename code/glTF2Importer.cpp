@@ -675,12 +675,16 @@ aiNode* ImportNode(aiScene* pScene, glTF2::Asset& r, std::vector<unsigned int>& 
                 {
 
                     int numBones = node.skin->jointNames.size();
-                    std::vector<std::vector<aiVertexWeight>>(numBones, nullptr);
+
+                    //2d vector of bones. each bone in this vector has a vector of aiVertexWeights
+                    //each aiVertexWeight contains a pair of vertex index and the weight associated to this bone.
+                    std::vector<std::vector<aiVertexWeight>> boneVec (numBones, std::vector<aiVertexWeight>());
 
 
-
+                    //nodes which represent bones for this node
                     std::vector<Ref<Node>> boneNodes = node.skin->jointNames;
 
+                    //get the inverse bind matrices
                     aiMatrix4x4 * ibms = new aiMatrix4x4[numBones];
                     node.skin->inverseBindMatrices->ExtractData(ibms);
 
@@ -721,9 +725,19 @@ aiNode* ImportNode(aiScene* pScene, glTF2::Asset& r, std::vector<unsigned int>& 
                         int currIndex = meshIndices.GetUInt(k);
 
                         
+                        for(int l = 0; l < 4; ++ l)
+                        {
+                            aiVertexWeight vw = aiVertexWeight (currIndex, currweights[l]);
+                            boneVec[(int)currjoints[l]].push_back(vw);
+                        }
+                    }
 
+                    for(unsigned int k = 0; k < numBones; ++k )
+                    {
+                        int numVertices = boneVec[k].size();
+                        aiVertexWeight * vw  = new aiVertexWeight(numVertices);
 
-
+                        
                     }
 
 
