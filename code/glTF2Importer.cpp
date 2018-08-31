@@ -714,9 +714,9 @@ aiNode* ImportNode(aiScene* pScene, glTF2::Asset& r, std::vector<unsigned int>& 
                     Accessor::Indexer meshIndices = prim.indices->GetIndexer();
 
 
-                    for (unsigned int k = 0; k < attr.joint[0]->count; k++)
+                    for (int k = 0; k < attr.joint[0]->count; k++)
                     {   
-                        vec4 currjoints = joints.GetValue<vec4>(k);
+                        vec4 currjoints = joints.GetValue<int>(k);
                         vec4 currweights = weights.GetValue<vec4>(k);
                         int currIndex = meshIndices.GetUInt(k);
 
