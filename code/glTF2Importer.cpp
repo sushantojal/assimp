@@ -73,12 +73,15 @@ namespace {
         ai_real w;
     };
 
+
+    //todo: handle other permissible types
     struct Joint {
-       vec4 jointinfo;
+       unsigned short jointinfo[4];
     };
 
+    //todo: handle other permissible typess
     struct Weight {
-        vec4 weightinfo;
+        float weightinfo[4];
     };
 
 } // namespace
