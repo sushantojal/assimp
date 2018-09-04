@@ -72,6 +72,15 @@ namespace {
         aiVector3D xyz;
         ai_real w;
     };
+
+    struct Joint {
+       vec4 jointinfo;
+    };
+
+    struct Weight {
+        vec4 weightinfo;
+    };
+
 } // namespace
 
 
@@ -664,87 +673,106 @@ aiNode* ImportNode(aiScene* pScene, glTF2::Asset& r, std::vector<unsigned int>& 
             }
         }
 
-        //need to create aiBones here because skin information is held by the node
-        for (size_t i = 0; i < node.meshes.size(); ++i)
+        //every node can have only one mesh
+        Mesh& mesh = *(node.meshes[0]);
+        if(node.skin)
         {
+            int totalBones = node.skin->jointNames.size();
 
-            Mesh& mesh = *(node.meshes[i]);
-            if(node.skin)
+            //nodes which represent bones for this node
+            std::vector<Ref<Node>> boneNodes = node.skin->jointNames;
+
+            //get the inverse bind matrices
+            aiMatrix4x4 * ibms = new aiMatrix4x4[totalBones];
+            node.skin->inverseBindMatrices->ExtractData(ibms);
+
+
+            //hash to determine the bones used by a mesh primitive
+            std::vector<bool> boneSet(totalBones, false);
+
+
+            for (unsigned int i = 0; i < mesh.primitives.size(); ++i)
             {
-                for (unsigned int p = 0; p < mesh.primitives.size(); ++p)
-                {
 
-                    int numBones = node.skin->jointNames.size();
+                //2d vector of bones. each bone in this vector has a vector of aiVertexWeights
+                //each aiVertexWeight contains a pair of vertex index and the weight associated to this bone.
+                std::vector<std::vector<aiVertexWeight>> boneVec(totalBones, std::vector<aiVertexWeight>());
 
-                    //2d vector of bones. each bone in this vector has a vector of aiVertexWeights
-                    //each aiVertexWeight contains a pair of vertex index and the weight associated to this bone.
-                    std::vector<std::vector<aiVertexWeight>> boneVec (numBones, std::vector<aiVertexWeight>());
+                //extract joints and weights and vertex indices fromt the mesh data
+                Joint * jointAttr = nullptr;
+                Weight * weightAttr = nullptr;
 
+                Mesh::Primitive& prim = mesh.primitives[i];
+                Mesh::Primitive::Attributes& attr = prim.attributes;
 
-                    //nodes which represent bones for this node
-                    std::vector<Ref<Node>> boneNodes = node.skin->jointNames;
+                if (attr.joint.size() > 0 && attr.joint[0])
+                    attr.joint[0]->ExtractData(jointAttr);
 
-                    //get the inverse bind matrices
-                    aiMatrix4x4 * ibms = new aiMatrix4x4[numBones];
-                    node.skin->inverseBindMatrices->ExtractData(ibms);
+                if (attr.weight.size() > 0 && attr.weight[0])
+                    attr.weight[0]->ExtractData(weightAttr);
 
-                    aiBone * bones = new aiBone[numBones];
-                    std::vector< Ref<Mesh> > meshes = node.meshes;
-                
-                    for(size_t j = 0; j < numBones; ++ j)
+                Accessor::Indexer meshIndices = prim.indices->GetIndexer();
+
+                unsigned int numBones = 0;
+
+                //for every bone, get all the vertex indices affected by it
+                //and the weight of that bone for that vertex.
+                for (unsigned int k = 0; k < attr.joint[0]->count; ++k)
+                {   
+                    for(unsigned int l = 0; l < 4; ++ l)
+                    {
+                        unsigned int boneIdx = jointAttr[k].jointinfo[l];
+                        if (!boneSet[boneIdx])
+                        {
+                            numBones++;
+                            boneSet[boneIdx] = true;
+                        }
+                        aiVertexWeight vw (meshIndices.GetUInt(k), weightAttr[k].weightinfo[l]);
+                        boneVec[boneIdx].push_back(vw);
+                    }
+                }
+
+                aiBone * bones = new aiBone[numBones];
+                unsigned int itr = 0;
+                for(unsigned int j = 0; j < totalBones; ++ j)
+                {           
+                    if (boneSet[j] == true)
                     {
                         //set the bone name as the node name
-                        bones[i].mName = node.name.empty() ? node.id : node.name;
+                        bones[itr].mName = boneNodes[j]->name.empty() ? boneNodes[j]->id : boneNodes[j]->name;
+
                         //set the inverse bind matrix
-                        bones[i].mOffsetMatrix = ibms[j];
-                    }
-                    delete ibms;
+                        bones[itr].mOffsetMatrix = ibms[j];
 
-                    vec4 * jointAttr = nullptr;
-                    vec4 * weightAttr = nullptr;
+                        //set the vertex index+weight array 
+                        aiVertexWeight * vw = new aiVertexWeight[boneVec[j].size()];
+                        for (unsigned int l = 0; l < boneVec[j].size(); ++l)
+                            vw[l] = boneVec[j][l];
 
-                    Mesh::Primitive& prim = mesh.primitives[p];
-                    Mesh::Primitive::Attributes& attr = prim.attributes;
+                        bones[itr].mNumWeights = boneVec[j].size();
+                        bones[itr].mWeights = vw;
 
-                    if (attr.joint.size() > 0 && attr.joint[0])
-                        attr.joint[0]->ExtractData(jointAttr);
-
-                    if (attr.weight.size() > 0 && attr.weight[0])
-                        attr.weight[0]->ExtractData(weightAttr);
-
-
-                    Accessor::Indexer joints = attr.joint[0]->GetIndexer();
-                    Accessor::Indexer weights = attr.weight[0]->GetIndexer();
-                    Accessor::Indexer meshIndices = prim.indices->GetIndexer();
-
-
-                    for (int k = 0; k < attr.joint[0]->count; k++)
-                    {   
-                        vec4 currjoints = joints.GetValue<int>(k);
-                        vec4 currweights = weights.GetValue<vec4>(k);
-                        int currIndex = meshIndices.GetUInt(k);
-
-                        
-                        for(int l = 0; l < 4; ++ l)
-                        {
-                            aiVertexWeight vw = aiVertexWeight (currIndex, currweights[l]);
-                            boneVec[(int)currjoints[l]].push_back(vw);
-                        }
-                    }
-
-                    for(unsigned int k = 0; k < numBones; ++k )
-                    {
-                        int numVertices = boneVec[k].size();
-                        aiVertexWeight * vw  = new aiVertexWeight(numVertices);
-
-                        
-                    }
-
-
+                        ++itr;
+                    }                 
                 }
-            }
-        }
 
+                pScene->mMeshes[ainode->mMeshes[i]]->mBones = &bones;
+
+                // clear/delete structures
+                for (unsigned int k = numBones - 1; k > 0; ++k)
+                    boneVec[k].clear();
+                boneVec.clear();
+
+                delete jointAttr;
+                delete weightAttr;
+
+                //reset hash of bones referred by the primitive
+                std::fill(boneSet.begin(), boneSet.end(), false);
+            }
+
+            delete[] ibms;
+            boneNodes.clear();
+        }
     }
 
     if (node.camera) {

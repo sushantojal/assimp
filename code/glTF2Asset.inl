@@ -1332,7 +1332,7 @@ inline void Asset::Load(const std::string& pFile, bool isBinary)
         mDicts[i]->AttachToDocument(doc);
     }
 
-    if(FindMember(doc, "animations"))
+    if(!FindMember(doc, "animations")->Empty())
         animations.Retrieve(0);
 
     // Read the "scene" property, which specifies which scene to load
