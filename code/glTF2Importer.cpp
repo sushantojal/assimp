@@ -693,7 +693,6 @@ aiNode* ImportNode(aiScene* pScene, glTF2::Asset& r, std::vector<unsigned int>& 
             //hash to determine the bones used by a mesh primitive
             std::vector<bool> boneSet(totalBones, false);
 
-
             for (unsigned int i = 0; i < mesh.primitives.size(); ++i)
             {
 
@@ -714,55 +713,63 @@ aiNode* ImportNode(aiScene* pScene, glTF2::Asset& r, std::vector<unsigned int>& 
                 if (attr.weight.size() > 0 && attr.weight[0])
                     attr.weight[0]->ExtractData(weightAttr);
 
-                Accessor::Indexer meshIndices = prim.indices->GetIndexer();
-
                 unsigned int numBones = 0;
 
                 //for every bone, get all the vertex indices affected by it
                 //and the weight of that bone for that vertex.
                 for (unsigned int k = 0; k < attr.joint[0]->count; ++k)
-                {   
+                {
                     for(unsigned int l = 0; l < 4; ++ l)
                     {
-                        unsigned int boneIdx = jointAttr[k].jointinfo[l];
-                        if (!boneSet[boneIdx])
+                        if(weightAttr[k].weightinfo[l] > 0.001 )
                         {
-                            numBones++;
-                            boneSet[boneIdx] = true;
+                            unsigned int boneIdx = static_cast<int>(jointAttr[k].jointinfo[l]);
+
+                            if (!boneSet[boneIdx])
+                            {
+                                numBones++;
+                                boneSet[boneIdx] = true;
+                            }
+
+                            aiVertexWeight vw (k, weightAttr[k].weightinfo[l]);
+                            boneVec[boneIdx].push_back(vw);
                         }
-                        aiVertexWeight vw (meshIndices.GetUInt(k), weightAttr[k].weightinfo[l]);
-                        boneVec[boneIdx].push_back(vw);
                     }
                 }
 
-                aiBone * bones = new aiBone[numBones];
+                aiBone ** bones = new aiBone* [numBones];
+
+                for(unsigned int j = 0; j < numBones; ++j )
+                    bones[j] = new aiBone();
+
                 unsigned int itr = 0;
                 for(unsigned int j = 0; j < totalBones; ++ j)
-                {           
+                {
                     if (boneSet[j] == true)
                     {
                         //set the bone name as the node name
-                        bones[itr].mName = boneNodes[j]->name.empty() ? boneNodes[j]->id : boneNodes[j]->name;
+                        bones[itr]->mName = boneNodes[j]->name.empty() ? boneNodes[j]->id : boneNodes[j]->name;
 
                         //set the inverse bind matrix
-                        bones[itr].mOffsetMatrix = ibms[j];
+                        bones[itr]->mOffsetMatrix = ibms[j];
 
-                        //set the vertex index+weight array 
+                        //set the vertex index+weight array
                         aiVertexWeight * vw = new aiVertexWeight[boneVec[j].size()];
                         for (unsigned int l = 0; l < boneVec[j].size(); ++l)
                             vw[l] = boneVec[j][l];
 
-                        bones[itr].mNumWeights = boneVec[j].size();
-                        bones[itr].mWeights = vw;
+                        bones[itr]->mNumWeights = boneVec[j].size();
+                        bones[itr]->mWeights = vw;
 
                         ++itr;
-                    }                 
+                    }
                 }
 
-                pScene->mMeshes[ainode->mMeshes[i]]->mBones = &bones;
+                pScene->mMeshes[ainode->mMeshes[i]]->mBones = bones;
+                pScene->mMeshes[ainode->mMeshes[i]]->mNumBones = numBones;
 
                 // clear/delete structures
-                for (unsigned int k = numBones - 1; k > 0; ++k)
+                for (unsigned int k = 0; k < totalBones; ++k)
                     boneVec[k].clear();
                 boneVec.clear();
 
@@ -887,7 +894,7 @@ void glTF2Importer::ImportAnimations(glTF2::Asset& r)
                     samplerRead.output->ExtractData(scaleKeys);
                 }
             }
-            
+
 
             //update channels based on input/output data
             double firstTimeStamp = 0;
@@ -921,15 +928,15 @@ void glTF2Importer::ImportAnimations(glTF2::Asset& r)
 
                 /**
                  * Extracted buffer is an array of floats. We need to segment
-                 * every 'numMorphTargets' floats. This segment is out key for 
+                 * every 'numMorphTargets' floats. This segment is out key for
                  * the channel.
                  **/
 
                 else if(keyType == "weights")
                 {
-                    
+
                     aiMorphChannel->mKeys[k].mTime = currTimeStamp;
-                    
+
                     double * blendWeights = new double[numMorphTargets];
                     for(int itr = 0; itr < numMorphTargets ; itr ++ )
                         blendWeights[itr] = blendkeys[itr + numMorphTargets * k];
@@ -958,7 +965,7 @@ void glTF2Importer::ImportAnimations(glTF2::Asset& r)
             delete scaleKeys;
             delete rotKeys;
             delete blendkeys;
-            
+
         }
         anims[i] = new aiAnimation();
         anims[i]->mDuration = animDuration;
