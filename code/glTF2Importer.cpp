@@ -751,7 +751,7 @@ aiNode* ImportNode(aiScene* pScene, glTF2::Asset& r, std::vector<unsigned int>& 
                         bones[itr]->mName = boneNodes[j]->name.empty() ? boneNodes[j]->id : boneNodes[j]->name;
 
                         //set the inverse bind matrix
-                        bones[itr]->mOffsetMatrix = ibms[j];
+                        bones[itr]->mOffsetMatrix = ibms[j].Inverse();
 
                         //set the vertex index+weight array
                         aiVertexWeight * vw = new aiVertexWeight[boneVec[j].size()];
