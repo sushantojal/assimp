@@ -84,6 +84,14 @@ namespace {
         float weightinfo[4];
     };
 
+    //custom comparator
+    struct mycomp{
+        bool operator()(  const aiString &a, const  aiString &b) const{
+            return a.length > b.length;
+        }
+    };
+
+
 } // namespace
 
 
@@ -967,16 +975,59 @@ void glTF2Importer::ImportAnimations(glTF2::Asset& r)
             delete blendkeys;
 
         }
+
+        //condense all channels belonging to one node into one channel
+
+
+        //using comparator for map which doesnt care about ordering. 
+        //should replace by unordered_map when using c++11.
+        std::map< aiString, aiNodeAnim* , mycomp> uniqueNodes;
+
+        for(size_t j = 0; j < animChannels.size(); ++j)
+        {
+            aiString currNodeName = animChannels[j]->mNodeName;
+            std::map< aiString, aiNodeAnim* >::iterator it = uniqueNodes.find(currNodeName);
+
+            if(it==uniqueNodes.end()) {
+                uniqueNodes.insert(std::pair< aiString, aiNodeAnim* >(currNodeName, animChannels[j]));
+            }
+            else{
+                if(animChannels[j]->mNumPositionKeys > 0)
+                {
+                    it->second->mPositionKeys = animChannels[j]->mPositionKeys;
+                    it->second->mNumPositionKeys = animChannels[j]->mNumPositionKeys;
+                }
+                else if(animChannels[j]->mNumScalingKeys > 0)
+                {
+                    it->second->mScalingKeys = animChannels[j]->mScalingKeys;
+                    it->second->mNumScalingKeys = animChannels[j]->mNumScalingKeys;
+                }
+                else if(animChannels[j]->mNumRotationKeys > 0)
+                {
+                    it->second->mRotationKeys = animChannels[j]->mRotationKeys;
+                    it->second->mNumRotationKeys = animChannels[j]->mNumRotationKeys;
+                }
+            }
+        }
+
+
         anims[i] = new aiAnimation();
         anims[i]->mDuration = animDuration;
-        anims[i]->mNumChannels = numNodeAnimChannels;
+        anims[i]->mNumChannels = uniqueNodes.size();
         anims[i]->mNumMorphMeshChannels = numMorphAnimChannels;
 
         aiNodeAnim **channels = new aiNodeAnim* [numNodeAnimChannels];
         aiMeshMorphAnim ** morphChannels = new aiMeshMorphAnim* [numMorphAnimChannels];
 
-        for(int itr = 0; itr < anims[i]->mNumChannels; ++itr)
-            channels[itr] = animChannels[itr];
+        // for(int itr = 0; itr < anims[i]->mNumChannels; ++itr)
+        //     channels[itr] = animChannels[itr];
+
+        int itr = 0;
+        for(std::map<aiString, aiNodeAnim*>::iterator it ; it != uniqueNodes.end(); ++it)
+        {
+            channels[itr] = it->second;
+            ++itr;
+        }
 
         for(int itr = 0; itr < anims[i]->mNumMorphMeshChannels; ++itr)
             morphChannels[itr] = meshAnimChannels[itr];
@@ -989,6 +1040,7 @@ void glTF2Importer::ImportAnimations(glTF2::Asset& r)
 
         animChannels.clear();
         meshAnimChannels.clear();
+        uniqueNodes.clear();
     }
 
     aiAnimation ** animations = new aiAnimation* [mScene->mNumAnimations];
