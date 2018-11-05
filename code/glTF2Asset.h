@@ -303,6 +303,21 @@ namespace glTF2
     };
 
 
+    //! Values for the Animation::Target::path field
+    enum AnimationPath {
+        AnimationPath_TRANSLATION,
+        AnimationPath_ROTATION,
+        AnimationPath_SCALE,
+        AnimationPath_WEIGHTS,
+    };
+    //! Values for the Animation::Sampler::interpolation field
+    enum Interpolation {
+        Interpolation_LINEAR,
+        Interpolation_STEP,
+        Interpolation_CUBICSPLINE,
+    };
+
+
     //! Values for the Accessor::type field (helper class)
     class AttribType
     {
@@ -866,49 +881,33 @@ namespace glTF2
 
     struct Animation : public Object
     {
-        struct AnimSampler {
-            std::string id;                 //!< The ID of this sampler.
-            std::string input;              //!< The ID of a parameter in this animation to use as key-frame input.
-            std::string interpolation;      //!< Type of interpolation algorithm to use between key-frames.
-            std::string output;             //!< The ID of a parameter in this animation to use as key-frame output.
+        struct Sampler {
+            Sampler() : interpolation(Interpolation_LINEAR) {}
+
+            Ref<Accessor> input;          //!< Accessor reference to the buffer storing the key-frame times.
+            Ref<Accessor> output;         //!< Accessor reference to the buffer storing the key-frame values.
+            Interpolation interpolation;  //!< Type of interpolation algorithm to use between key-frames.
         };
 
-        struct AnimChannel {
-            int sampler;                 //!< The index of a sampler in the containing animation's samplers property.
+        struct Target {
+            Target() : path(AnimationPath_TRANSLATION) {}
 
-            struct AnimTarget {
-                Ref<Node> node;          //!< The node to animate.
-                std::string path;        //!< The name of property of the node to animate ("translation", "rotation", or "scale").
-            } target;
+            Ref<Node> node;                //!< The node to animate.
+            AnimationPath path;            //!< The property of the node to animate.
         };
 
-        struct AnimParameters {
-            Ref<Accessor> TIME;           //!< Accessor reference to a buffer storing a array of floating point scalar values.
-            Ref<Accessor> rotation;       //!< Accessor reference to a buffer storing a array of four-component floating-point vectors.
-            Ref<Accessor> scale;          //!< Accessor reference to a buffer storing a array of three-component floating-point vectors.
-            Ref<Accessor> translation;    //!< Accessor reference to a buffer storing a array of three-component floating-point vectors.
+        struct Channel {
+            Channel() : sampler(-1) {}
+
+            int sampler;                   //!< The sampler index containing the animation data.
+            Target target;                 //!< The node and property to animate.
         };
 
-        std::vector<AnimChannel> Channels;            //!< Connect the output values of the key-frame animation to a specific node in the hierarchy.
-        AnimParameters Parameters;                    //!< The samplers that interpolate between the key-frames.
-        std::vector<AnimSampler> Samplers;         //!< The parameterized inputs representing the key-frame data.
+        std::vector<Sampler> samplers;     //!< All the key-frame data for this animation.
+        std::vector<Channel> channels;     //!< Data to connect nodes to key-frames.
 
         Animation() {}
         void Read(Value& obj, Asset& r);
-
-        //! Get accessor given an animation parameter name.
-        Ref<Accessor> GetAccessor(std::string name) {
-            if (name == "TIME") {
-                return Parameters.TIME;
-            } else if (name == "rotation") {
-                return Parameters.rotation;
-            } else if (name == "scale") {
-                return Parameters.scale;
-            } else if (name == "translation") {
-                return Parameters.translation;
-            }
-            return Ref<Accessor>();
-        }
     };
 
 

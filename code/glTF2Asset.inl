@@ -1060,6 +1060,10 @@ inline void Node::Read(Value& obj, Asset& r)
         if (meshRef) this->meshes.push_back(meshRef);
     }
 
+	if (Value* skin = FindUInt(obj, "skin")) {
+		this->skin = r.skins.Retrieve(skin->GetUint());
+	}
+
     if (Value* camera = FindUInt(obj, "camera")) {
         this->camera = r.cameras.Retrieve(camera->GetUint());
         if (this->camera)
@@ -1078,6 +1082,83 @@ inline void Scene::Read(Value& obj, Asset& r)
         }
     }
 }
+
+
+inline void Skin::Read(Value& obj, Asset& r)
+{
+	if (Value* matrices = FindUInt(obj, "inverseBindMatrices")) {
+		inverseBindMatrices = r.accessors.Retrieve(matrices->GetUint());
+	}
+	if (Value* joints = FindArray(obj, "joints")) {
+		for (unsigned i = 0; i < joints->Size(); ++i) {
+			if (!(*joints)[i].IsUint()) continue;
+			Ref<Node> node = r.nodes.Retrieve((*joints)[i].GetUint());
+			if (node) {
+				this->jointNames.push_back(node);
+			}
+		}
+	}
+}
+inline void Animation::Read(Value& obj, Asset& r)
+{
+	if (Value* samplers = FindArray(obj, "samplers")) {
+		for (unsigned i = 0; i < samplers->Size(); ++i) {
+			Value& sampler = (*samplers)[i];
+			Sampler s;
+			if (Value* input = FindUInt(sampler, "input")) {
+				s.input = r.accessors.Retrieve(input->GetUint());
+			}
+			if (Value* output = FindUInt(sampler, "output")) {
+				s.output = r.accessors.Retrieve(output->GetUint());
+			}
+			s.interpolation = Interpolation_LINEAR;
+			if (Value* interpolation = FindString(sampler, "interpolation")) {
+				const std::string interp = interpolation->GetString();
+				if (interp == "LINEAR") {
+					s.interpolation = Interpolation_LINEAR;
+				}
+				else if (interp == "STEP") {
+					s.interpolation = Interpolation_STEP;
+				}
+				else if (interp == "CUBICSPLINE") {
+					s.interpolation = Interpolation_CUBICSPLINE;
+				}
+			}
+			this->samplers.push_back(s);
+		}
+	}
+	if (Value* channels = FindArray(obj, "channels")) {
+		for (unsigned i = 0; i < channels->Size(); ++i) {
+			Value& channel = (*channels)[i];
+			Channel c;
+			if (Value* sampler = FindUInt(channel, "sampler")) {
+				c.sampler = sampler->GetUint();
+			}
+			if (Value* target = FindObject(channel, "target")) {
+				if (Value* node = FindUInt(*target, "node")) {
+					c.target.node = r.nodes.Retrieve(node->GetUint());
+				}
+				if (Value* path = FindString(*target, "path")) {
+					const std::string p = path->GetString();
+					if (p == "translation") {
+						c.target.path = AnimationPath_TRANSLATION;
+					}
+					else if (p == "rotation") {
+						c.target.path = AnimationPath_ROTATION;
+					}
+					else if (p == "scale") {
+						c.target.path = AnimationPath_SCALE;
+					}
+					else if (p == "weights") {
+						c.target.path = AnimationPath_WEIGHTS;
+					}
+				}
+			}
+			this->channels.push_back(c);
+		}
+	}
+}
+
 
 inline void AssetMetadata::Read(Document& doc)
 {
@@ -1250,6 +1331,13 @@ inline void Asset::Load(const std::string& pFile, bool isBinary)
 
         this->scene = s;
     }
+
+
+	if (Value* animsArray = FindArray(doc, "animations")) {
+		for (unsigned int i = 0; i < animsArray->Size(); ++i) {
+			animations.Retrieve(i);
+		}
+	}
 
     // Clean up
     for (size_t i = 0; i < mDicts.size(); ++i) {
