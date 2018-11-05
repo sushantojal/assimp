@@ -645,7 +645,7 @@ static void BuildVertexWeightMapping(Ref<Mesh>& mesh, std::vector<std::vector<ai
     const int num_vertices = attr.weight[0]->count;
 
     struct Weights { float values[4]; };
-    struct Indices { uint8_t values[4]; };
+    struct Indices { uint16_t values[4]; };
     Weights* weights = nullptr;
     Indices* indices = nullptr;
     attr.weight[0]->ExtractData(weights);
@@ -717,15 +717,15 @@ aiNode* ImportNode(aiScene* pScene, glTF2::Asset& r, std::vector<unsigned int>& 
                 aiBone* bone = new aiBone();
 
                 Ref<Node> joint = node.skin->jointNames[i];
-                bone->mName = joint->name;
+                bone->mName = joint->name.empty() ? joint->id : joint->name;
                 GetNodeTransform(bone->mOffsetMatrix, *joint);
 
                 std::vector<aiVertexWeight>& weights = weighting[i];
 
-                bone->mNumWeights = weights.size();
+                bone->mNumWeights = weighting[i].size();
                 if (bone->mNumWeights > 0) {
                     bone->mWeights = new aiVertexWeight[bone->mNumWeights];
-                    memcpy(bone->mWeights, weights.data(), bone->mNumWeights * sizeof(aiVertexWeight));
+                    memcpy(bone->mWeights, weighting[i].data(), bone->mNumWeights * sizeof(aiVertexWeight));
                 }
                 mesh->mBones[i] = bone;
             }
