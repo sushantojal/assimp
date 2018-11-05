@@ -713,14 +713,18 @@ aiNode* ImportNode(aiScene* pScene, glTF2::Asset& r, std::vector<unsigned int>& 
             std::vector<std::vector<aiVertexWeight>> weighting(mesh->mNumBones);
             BuildVertexWeightMapping(node.meshes[0], weighting);
 
+            //get the inverse bind matrices
+            aiMatrix4x4 * ibms = new aiMatrix4x4[mesh->mNumBones];
+            node.skin->inverseBindMatrices->ExtractData(ibms);
+
             for (size_t i = 0; i < mesh->mNumBones; ++i) {
                 aiBone* bone = new aiBone();
 
                 Ref<Node> joint = node.skin->jointNames[i];
                 bone->mName = joint->name.empty() ? joint->id : joint->name;
-                GetNodeTransform(bone->mOffsetMatrix, *joint);
+                bone->mOffsetMatrix = ibms[i];
 
-                std::vector<aiVertexWeight>& weights = weighting[i];
+                //std::vector<aiVertexWeight>& weights = weighting[i];
 
                 bone->mNumWeights = weighting[i].size();
                 if (bone->mNumWeights > 0) {
