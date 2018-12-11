@@ -889,7 +889,7 @@ namespace glTF2
     //         Ref<Accessor> scale;          //!< Accessor reference to a buffer storing a array of three-component floating-point vectors.
     //         Ref<Accessor> translation;    //!< Accessor reference to a buffer storing a array of three-component floating-point vectors.
     //     };
-        
+
 
     //     std::vector<AnimChannel> Channels;            //!< Connect the output values of the key-frame animation to a specific node in the hierarchy.
     //     AnimParameters Parameters;                    //!< The samplers that interpolate between the key-frames.
@@ -931,7 +931,7 @@ namespace glTF2
                 std::string path;        //!< The name of property of the node to animate ("translation", "rotation", or "scale").
             } target;
         };
-        
+
         std::vector<AnimChannel> Channels;            //!< Connect the output values of the key-frame animation to a specific node in the hierarchy.
         std::vector<AnimSampler> Samplers;         //!< The parameterized inputs representing the key-frame data.
 
@@ -1118,6 +1118,9 @@ namespace glTF2
 
         //! Enables binary encoding on the asset
         void SetAsBinary();
+
+        //! Read GLTF binaryu chunk
+        bool ReadBinaryChunk(IOStream& stream);
 
         //! Search for an available name, starting from the given strings
         std::string FindUniqueID(const std::string& str, const char* suffix);

@@ -1241,29 +1241,38 @@ inline void Asset::ReadBinaryHeader(IOStream& stream, std::vector<char>& sceneDa
     }
 
     uint32_t padding = ((chunk.chunkLength + 3) & ~3) - chunk.chunkLength;
-    if (padding > 0) {
-        stream.Seek(padding, aiOrigin_CUR);
-    }
-
     AI_SWAP4(header.length);
-    mBodyOffset = 12 + 8 + chunk.chunkLength + padding + 8;
+    mBodyOffset = sizeof(GLB_Header) + 2 * sizeof(GLB_Chunk) + chunk.chunkLength;
     if (header.length >= mBodyOffset) {
-        if (stream.Read(&chunk, sizeof(chunk), 1) != 1) {
-            throw DeadlyImportError("GLTF: Unable to read BIN chunk");
+        if (!ReadBinaryChunk(stream)) {
+            if (padding > 0) {
+                stream.Seek(padding - sizeof(GLB_Chunk), aiOrigin_CUR);
+                mBodyOffset += padding;
+                if (!ReadBinaryChunk(stream)) {
+                    throw DeadlyImportError("GLTF: Unable to read BIN chunk");
+                }
+            }
         }
-
-        AI_SWAP4(chunk.chunkLength);
-        AI_SWAP4(chunk.chunkType);
-
-        if (chunk.chunkType != ChunkType_BIN) {
-            throw DeadlyImportError("GLTF: BIN chunk missing");
-        }
-
-        mBodyLength = chunk.chunkLength;
     }
     else {
         mBodyOffset = mBodyLength = 0;
     }
+}
+
+inline bool Asset::ReadBinaryChunk(IOStream& stream)
+{
+    GLB_Chunk chunk;
+
+    if (stream.Read(&chunk, sizeof(chunk), 1) != 1) {
+        throw DeadlyImportError("GLTF: Unable to read BIN chunk");
+    }
+    AI_SWAP4(chunk.chunkLength);
+    AI_SWAP4(chunk.chunkType);
+    if (chunk.chunkType != ChunkType_BIN) {
+        return false;
+    }
+    mBodyLength = chunk.chunkLength;
+    return true;
 }
 
 inline void Asset::Load(const std::string& pFile, bool isBinary)
