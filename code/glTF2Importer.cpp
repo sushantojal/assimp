@@ -1029,7 +1029,7 @@ void glTF2Importer::ImportAnimations(glTF2::Asset& r)
         //     channels[itr] = animChannels[itr];
 
         int itr = 0;
-        for(std::map<aiString, aiNodeAnim*>::iterator it ; it != uniqueNodes.end(); ++it)
+        for(std::map<aiString, aiNodeAnim*>::iterator it = uniqueNodes.begin() ; it != uniqueNodes.end(); ++it)
         {
             channels[itr] = it->second;
             ++itr;
