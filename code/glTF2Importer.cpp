@@ -464,34 +464,40 @@ void glTF2Importer::ImportMeshes(glTF2::Asset& r)
 
                     if (target.position.size() > 0) {
                         aiVector3D *positionDiff = nullptr;
-                        target.position[0]->ExtractData(positionDiff);
-                        for(unsigned int vertexId = 0; vertexId < aim->mNumVertices; vertexId++) {
-                            aiAnimMesh.mVertices[vertexId] += positionDiff[vertexId];
+                        if (target.position[0]->ExtractData(positionDiff)) {
+                            for (unsigned int vertexId = 0;
+                                 vertexId < aim->mNumVertices; vertexId++) {
+                                aiAnimMesh.mVertices[vertexId] += positionDiff[vertexId];
+                            }
+                            delete[] positionDiff;
                         }
-                        delete [] positionDiff;
                     }
                     if (target.normal.size() > 0) {
                         aiVector3D *normalDiff = nullptr;
-                        target.normal[0]->ExtractData(normalDiff);
-                        for(unsigned int vertexId = 0; vertexId < aim->mNumVertices; vertexId++) {
-                            aiAnimMesh.mNormals[vertexId] += normalDiff[vertexId];
+                        if (target.normal[0]->ExtractData(normalDiff)) {
+                            for (unsigned int vertexId = 0;
+                                 vertexId < aim->mNumVertices; vertexId++) {
+                                aiAnimMesh.mNormals[vertexId] += normalDiff[vertexId];
+                            }
+                            delete[] normalDiff;
                         }
-                        delete [] normalDiff;
                     }
                     if (target.tangent.size() > 0) {
                         Tangent *tangent = nullptr;
                         attr.tangent[0]->ExtractData(tangent);
-
                         aiVector3D *tangentDiff = nullptr;
-                        target.tangent[0]->ExtractData(tangentDiff);
-
-                        for (unsigned int vertexId = 0; vertexId < aim->mNumVertices; ++vertexId) {
-                            tangent[vertexId].xyz += tangentDiff[vertexId];
-                            aiAnimMesh.mTangents[vertexId] = tangent[vertexId].xyz;
-                            aiAnimMesh.mBitangents[vertexId] = (aiAnimMesh.mNormals[vertexId] ^ tangent[vertexId].xyz) * tangent[vertexId].w;
+                        if (target.tangent[0]->ExtractData(tangentDiff)) {
+                            for (unsigned int vertexId = 0;
+                                 vertexId < aim->mNumVertices; ++vertexId) {
+                                tangent[vertexId].xyz += tangentDiff[vertexId];
+                                aiAnimMesh.mTangents[vertexId] = tangent[vertexId].xyz;
+                                aiAnimMesh.mBitangents[vertexId] =
+                                    (aiAnimMesh.mNormals[vertexId] ^ tangent[vertexId].xyz) *
+                                    tangent[vertexId].w;
+                            }
+                            delete[] tangent;
+                            delete[] tangentDiff;
                         }
-                        delete [] tangent;
-                        delete [] tangentDiff;
                     }
                     if (mesh.weights.size() > i) {
                         aiAnimMesh.mWeight = mesh.weights[i];
@@ -979,7 +985,7 @@ void glTF2Importer::ImportAnimations(glTF2::Asset& r)
         //condense all channels belonging to one node into one channel
 
 
-        //using comparator for map which doesnt care about ordering. 
+        //using comparator for map which doesnt care about ordering.
         //should replace by unordered_map when using c++11.
         std::map< aiString, aiNodeAnim* , mycomp> uniqueNodes;
 
